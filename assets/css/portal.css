@@ -537,3 +537,14 @@ body[data-portal-page="results"] td .result-step strong{margin-top:3px;font-size
 .support-notification-context p{font-size:.625rem;line-height:1.55;margin:0;max-width:900px}
 .support-notification-context small{font-size:.5625rem;line-height:1.4;margin-top:6px}
 .support-notification-context .btn{font-size:.625rem}
+
+/* Desktop sidebar collapse */
+.sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;cursor:pointer;font-weight:900;font-size:1rem;line-height:1}
+.sidebar-toggle:hover{background:#f4f7fb}
+.app,.side,.main,.content{transition:grid-template-columns .18s ease,transform .18s ease,width .18s ease,max-width .18s ease,padding .18s ease}
+.app.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}
+.app.sidebar-collapsed .side{transform:translateX(-100%)}
+.app.sidebar-collapsed .main{grid-column:2}
+.app.sidebar-collapsed .content{max-width:none;width:100%}
+.app.sidebar-collapsed .sidebar-toggle{background:#edf3fb}
+@media(max-width:820px){.sidebar-toggle{display:none}.app.sidebar-collapsed{display:block}.app.sidebar-collapsed .side{transform:translateX(-100%)}}

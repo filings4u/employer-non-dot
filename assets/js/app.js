@@ -83,13 +83,24 @@ function shell(c){
     </aside>
     <main class="main">
       <header class="top">
-        <div class="top-left"><button class="menu" id="menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="mobileNav"><span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span></button><span class="crumb">${esc(planLabel)} / ${esc(cfgPage(current).label)}</span></div>
+        <div class="top-left"><button class="menu" id="menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="mobileNav"><span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span></button><button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Hide sidebar" title="Hide sidebar">‹</button><span class="crumb">${esc(planLabel)} / ${esc(cfgPage(current).label)}</span></div>
         <div class="top-right"><div class="font-sizer" role="group" aria-label="Page font size"><button type="button" id="fontDown" aria-label="Decrease font size">A−</button><button type="button" class="font-reset" id="fontSizeValue" aria-label="Reset font size">${portalFontSize===FONT_DEFAULT?'Default':portalFontSize}</button><button type="button" id="fontUp" aria-label="Increase font size">A+</button></div><span class="pill">${esc(C.kind==='self'?'Self Service':'Management')}</span><span class="pill">NON-DOT</span><button class="signout" id="logout" type="button">Sign out</button></div>
       </header>
       <section class="mobile-nav" id="mobileNav" aria-hidden="true" aria-label="Portal navigation"><div class="mobile-nav-inner"><div class="mobile-nav-head"><div><span>Portal navigation</span><strong>${esc(planLabel)}</strong></div><span class="mobile-nav-current">${esc(cfgPage(current).label)}</span></div><nav class="mobile-nav-links">${links}</nav><div class="mobile-nav-foot"><span>${esc(C.domain)}</span><small>Select a page to close this menu.</small></div></div></section>
       <div class="content"><div id="toast"></div><section class="hero"><span class="hero-kicker">${esc(planLabel)}</span><h1>${esc(cfgPage(current).label)}</h1><p id="subtitle">Loading NON-DOT Workforce workspace.</p><div class="hero-actions" id="actions"></div></section><section class="section" id="content"><div class="panel"><div class="loading-msg">Loading…</div></div></section></div>
     </main>
   </div>`;
+  const appEl=$('.app'),sideToggle=$('#sidebarToggle');
+  const SIDE_KEY='s4u_employer_sidebar_collapsed_v1';
+  const setSidebarCollapsed=collapsed=>{
+    const next=!!collapsed&&window.innerWidth>820;
+    appEl?.classList.toggle('sidebar-collapsed',next);
+    if(sideToggle){sideToggle.textContent=next?'›':'‹';sideToggle.setAttribute('aria-label',next?'Show sidebar':'Hide sidebar');sideToggle.title=next?'Show sidebar':'Hide sidebar'}
+    try{localStorage.setItem(SIDE_KEY,next?'1':'0')}catch{}
+  };
+  let savedSide=false;try{savedSide=localStorage.getItem(SIDE_KEY)==='1'}catch{}
+  setSidebarCollapsed(savedSide);
+  if(sideToggle)sideToggle.onclick=()=>setSidebarCollapsed(!appEl?.classList.contains('sidebar-collapsed'));
   const menuBtn=$('#menu'),mobileNav=$('#mobileNav');
   const setMobileNav=open=>{
     const isMobile=window.matchMedia('(max-width: 820px)').matches;
@@ -104,7 +115,7 @@ function shell(c){
   if(menuBtn&&mobileNav){
     menuBtn.onclick=()=>setMobileNav(!mobileNav.classList.contains('open'));
     mobileNav.addEventListener('click',e=>{if(e.target.closest('a'))setMobileNav(false)});
-    window.addEventListener('resize',()=>{if(window.innerWidth>820)setMobileNav(false)},{passive:true});
+    window.addEventListener('resize',()=>{if(window.innerWidth>820){setMobileNav(false);let saved=false;try{saved=localStorage.getItem(SIDE_KEY)==='1'}catch{}setSidebarCollapsed(saved)}else appEl?.classList.remove('sidebar-collapsed')},{passive:true});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')setMobileNav(false)});
   }
   const fontDown=$('#fontDown'),fontUp=$('#fontUp'),fontReset=$('#fontSizeValue');
@@ -1071,6 +1082,6 @@ async function boot(){
     document.body.innerHTML=`<main class="login-page"><section class="login-card"><img class="login-logo" src="/images/workforce-non-dot.png" alt="screenings4u"><h1>Portal unavailable</h1><p>${esc(msg||'This NON-DOT Workforce portal could not be loaded.')}</p><a class="btn primary" href="/login.html">Return to sign in</a></section></main>`;
   }
 }
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js?v=20261007-ultrafast1').catch(()=>{}),{once:true})}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js?v=20261007-ultrafast2').catch(()=>{}),{once:true})}
 boot();
 })();
