@@ -530,3 +530,10 @@ body[data-portal-page="results"] td .result-step span{width:20px;height:20px;fon
 body[data-portal-page="results"] td .result-step:before{top:10px;height:1px}
 body[data-portal-page="results"] td .result-step strong{margin-top:3px;font-size:.46rem;line-height:1.15}
 @media(max-width:900px){.results-stage-strip{grid-template-columns:1fr;gap:7px}.results-stage{border:1px solid #dbe4ed!important;border-radius:9px!important}.workflow-board-wrap{padding:10px}}
+
+/* Support notification context: match portal typography */
+.support-notification-context .support-context-kicker{font-size:.5625rem;line-height:1.35;letter-spacing:.06em;font-weight:900}
+.support-notification-context h3{font-size:.8rem;line-height:1.35;margin:4px 0 5px}
+.support-notification-context p{font-size:.625rem;line-height:1.55;margin:0;max-width:900px}
+.support-notification-context small{font-size:.5625rem;line-height:1.4;margin-top:6px}
+.support-notification-context .btn{font-size:.625rem}
