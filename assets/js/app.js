@@ -428,24 +428,24 @@ function documentActions(r){
 }
 function renderDocumentsIndex(){
   const rows=data?.documents||[];
-  return `<div class="document-help"><div><strong>Your document library</strong><span>Upload any document your company wants to keep with its NON-DOT Workforce account. Private documents stay in this Employer portal. Documents sent to Workforce NON-DOT are also shared with screenings4u Management for review.</span></div></div>
+  return `<div class="document-help"><div><strong>Your document library</strong><span>Keep company policies, forms, records, and other NON-DOT documents organized in one secure library. Choose document access based on how your company intends to use each file.</span></div></div>
   <div class="document-delete-warning" role="note"><strong>Permanent delete</strong><span>The Delete button permanently removes the document record and stored file. It cannot be restored after deletion.</span></div>
   ${table('Workforce Documents',rows,COLS.documents,r=>documentActions(r))}`;
 }
 function renderDocumentUpload(){
   return `<form id="documentUploadForm" class="person-form document-upload-form">
-    <div class="person-page-head"><div><span>Document Management</span><h2>Upload Document</h2><p>Add a document to your company’s Workforce NON-DOT library and choose whether it stays private or is sent to Workforce NON-DOT for review.</p></div><span class="badge good">Secure Upload</span></div>
+    <div class="person-page-head"><div><span>Document Management</span><h2>Upload Document</h2><p>Add a document to your company’s secure NON-DOT document library and choose who should be able to access it.</p></div><span class="badge good">Secure Upload</span></div>
     <div id="documentUploadNotice"></div>
     <div class="person-form-grid">
       <section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Document</h3><p>Choose the file and identify what kind of document it is.</p></div></div><div class="person-fields">
         <div class="person-field full"><label>Choose document <span aria-hidden="true">*</span></label><input type="file" name="file" id="documentFile" required><small class="field-help">Maximum file size: 50 MB.</small></div>
         ${personSelect('document_type','Document type','general',[['general','General Document'],['policy','Company Policy'],['hr','Human Resources'],['safety','Safety'],['testing','Drug & Alcohol Testing'],['compliance','Compliance'],['medical','Medical / Fitness'],['invoice','Invoice / Billing'],['other','Other']],true)}
       </div></section>
-      <section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Visibility / Routing</h3><p>Decide whether this document is only for your company or should be sent to Workforce NON-DOT staff.</p></div></div><div class="person-fields">
-        ${personSelect('visibility','Send document to','private',[['private','Keep Private'],['send_to_workforce','Send to Workforce NON-DOT']],true)}
-        <div class="person-field full"><div class="document-route-explain" id="documentRouteExplain"><strong>Keep Private</strong><span>This file stays in your Employer NON-DOT portal and will not appear in the Workforce NON-DOT management portal.</span></div></div>
+      <section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Document Access</h3><p>Choose whether this document is for your company only or should also be shared through your Workforce NON-DOT account.</p></div></div><div class="person-fields">
+        ${personSelect('visibility','Who can access this document?','private',[['private','Company Only'],['send_to_workforce','Share with Workforce NON-DOT']],true)}
+        <div class="person-field full"><div class="document-route-explain" id="documentRouteExplain"><strong>Company Only</strong><span>Keep this document in your company’s secure document library for your authorized Employer portal users.</span></div></div>
       </div></section>
-      <section class="person-card document-review-card"><div class="person-card-head"><span>03</span><div><h3>Before You Upload</h3><p>Review how document sharing works.</p></div></div><div class="document-upload-rules"><div><strong>Private files</strong><span>Visible to your Employer portal only.</span></div><div><strong>Sent for review</strong><span>Added to the Workforce NON-DOT management Documents page and a branded email notification is sent to Workforce staff.</span></div><div><strong>Secure storage</strong><span>Files are stored in a private bucket and opened through temporary signed links.</span></div></div></section>
+      <section class="person-card document-review-card"><div class="person-card-head"><span>03</span><div><h3>Your Document Library</h3><p>Keep the records your company needs organized and easy to find.</p></div></div><div class="document-upload-rules"><div><strong>Keep records organized</strong><span>Store policies, forms, testing records, compliance documents, invoices, and other company files in one place.</span></div><div><strong>Choose access per document</strong><span>Keep a file company-only or share it through your Workforce NON-DOT account when the document relates to a service or account need.</span></div><div><strong>Access files anytime</strong><span>Return to Documents to view, download, or manage the files your company has uploaded.</span></div></div></section>
     </div>
     <div class="person-savebar"><a class="btn ghost" href="/documents.html">Cancel</a><button class="btn primary" id="documentUploadSubmit" type="submit">Upload Document</button></div>
   </form>`;
@@ -456,7 +456,7 @@ function documentUploadNotice(message,type='good'){
 function bindDocumentUpload(){
   const form=$('#documentUploadForm');if(!form)return;
   const visibility=form.elements.visibility,route=$('#documentRouteExplain');
-  const updateRoute=()=>{const sent=visibility.value==='send_to_workforce';route.innerHTML=sent?'<strong>Send to Workforce NON-DOT</strong><span>This file will also appear in the Workforce NON-DOT management Documents page and staff will receive a branded email that your company uploaded a document for review.</span>':'<strong>Keep Private</strong><span>This file stays in your Employer NON-DOT portal and will not appear in the Workforce NON-DOT management portal.</span>';route.classList.toggle('sent',sent)};
+  const updateRoute=()=>{const sent=visibility.value==='send_to_workforce';route.innerHTML=sent?'<strong>Send to Workforce NON-DOT</strong><span>This file will also appear in the Workforce NON-DOT management Documents page and staff will receive a branded email that your company uploaded a document for review.</span>':'<strong>Company Only</strong><span>Keep this document in your company’s secure document library for your authorized Employer portal users.</span>';route.classList.toggle('sent',sent)};
   visibility.onchange=updateRoute;updateRoute();
   form.onsubmit=async e=>{
     e.preventDefault();const file=$('#documentFile')?.files?.[0];if(!file){documentUploadNotice('Choose a document to upload.','bad');return}
@@ -925,7 +925,7 @@ function subtitleFor(p){
     testing:'Order NON-DOT drug and alcohol tests for employees and drivers. Orders are billed to your company account and sent directly to screenings4u Management.','testing-order':'Create or review a bill-to-account NON-DOT testing order.',
     results:'Track NON-DOT testing from order through lab and MRO review, then view or download completed results.',
     compliance:'Monitor company health, testing outcomes, random-program readiness, and compliance follow-up.',
-    documents:'Upload, view, and securely manage documents for your NON-DOT Workforce account.','document-upload':'Upload a document and choose whether to keep it private or send it to Workforce NON-DOT for review.',
+    documents:'Upload, view, and securely manage documents for your NON-DOT Workforce account.','document-upload':'Upload and organize company documents in your secure NON-DOT document library.',
     consents:'Create, send, and manage company documents for employees, NON-DOT drivers, and staff contacts.','consent-editor':'Create or edit a company document, choose recipients, and distribute it.','consent-view':'View a saved company document and its delivery history.',
     reports:'Build company reports and export them as PDF or CSV, including Enterprise scheduling and task activity.',
     scheduler:'Create and manage work schedules, shifts, meetings, training, and time off.',
