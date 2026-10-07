@@ -17,6 +17,7 @@ async function refresh(session){
  return refreshPromise;
 }
 async function getSession(){let s=read();if(!s)return null;const now=Math.floor(Date.now()/1000);if(Number(s.expires_at||0)<=now+90)s=await refresh(s);return s;}
+async function refreshSession(){const s=read();if(!s?.refresh_token)return null;return refresh(s);}
 async function signOut(){const s=read();try{if(s?.access_token)await fetch(`${C.workforceUrl}/auth/v1/logout`,{method:'POST',headers:{'Authorization':`Bearer ${s.access_token}`,'apikey':C.workforceKey}})}catch{}write(null);}
-window.S4UAuth={getSession,signOut,readSession:read,storageKey:KEY};
+window.S4UAuth={getSession,refreshSession,signOut,readSession:read,storageKey:KEY};
 })();

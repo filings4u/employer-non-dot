@@ -26,6 +26,13 @@ const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
 const CTX_CACHE='s4u_employer_ctx_v1',BRAND_CACHE='s4u_employer_brand_v1',DATA_CACHE='s4u_employer_page_cache_v2:';
+const CTX_CHECK_KEY='s4u_employer_ctx_checked_v1',BRAND_CHECK_KEY='s4u_employer_brand_checked_v1';
+const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection||null;
+const MOBILE_FAST_PATH=matchMedia('(max-width: 820px)').matches||matchMedia('(pointer: coarse)').matches;
+const REDUCED_NETWORK=!!(conn&&(conn.saveData||/^(slow-2g|2g|3g)$/i.test(String(conn.effectiveType||''))));
+const canBackgroundValidate=(key,ttl)=>Date.now()-Number(localStorage.getItem(key)||0)>ttl;
+const markValidated=key=>{try{localStorage.setItem(key,String(Date.now()))}catch{}};
+
 const jsonGet=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null')}catch{return null}},jsonSet=(store,key,val)=>{try{store.setItem(key,JSON.stringify(val))}catch{}};
 const cacheKeyFor=(pathname,search='')=>DATA_CACHE+pathname+search;
 const pageCacheKey=()=>cacheKeyFor(location.pathname,location.search);
@@ -41,13 +48,22 @@ function brandInfo(){const d=brandState||{},b=d.branding||{},x=d.branding_defaul
 function applyBranding(){const b=brandInfo();if(!b.enabled||!b.applyPortal)return;document.documentElement.style.setProperty('--navy',b.primary);document.documentElement.style.setProperty('--navy2',b.primary);document.documentElement.style.setProperty('--blue',b.primary);document.documentElement.style.setProperty('--orange',b.accent);document.body.dataset.whiteLabel='true';const fav=document.querySelector('link[rel="icon"]');if(fav&&b.favicon)fav.href=b.favicon;}
 async function loadBranding(){if(C.kind!=='employer')return null;try{return await invoke('nondot-employer-branding',{action:'workspace'})}catch(e){return null}}
 
-let _sessionPromise=null;async function session(){if(!_sessionPromise)_sessionPromise=auth.getSession().catch(e=>{_sessionPromise=null;throw e});return _sessionPromise}
+async function session(){return auth.getSession()}
 async function invoke(name,body={}){
-  const s=await session();
-  if(!s)throw new Error('Your session has expired. Please sign in again.');
   const payload={portal_code:C.portalCode,membership_id:stored()||undefined,subscription_id:storedSub()||undefined,...body};
-  const r=await fetch(`${C.workforceUrl}/functions/v1/${name}`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`,'apikey':C.workforceKey},body:JSON.stringify(payload)});
+  const call=async s=>fetch(`${C.workforceUrl}/functions/v1/${name}`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`,'apikey':C.workforceKey},body:JSON.stringify(payload)});
+  let s=await session();
+  if(!s)throw new Error('Your session has expired. Please sign in again.');
+  let r=await call(s);
+  if(r.status===401){
+    const fresh=await auth.refreshSession?.().catch(()=>null);
+    if(fresh?.access_token){s=fresh;r=await call(s)}
+  }
   const d=await r.json().catch(()=>({}));
+  if(r.status===401){
+    try{await auth.signOut()}catch{}
+    throw new Error('Your session has expired. Please sign in again.');
+  }
   if(!r.ok||d.error)throw new Error(d.error||d.reason||`Request failed (${r.status}).`);
   return d;
 }
@@ -1000,32 +1016,30 @@ async function prefetchPageData(pathname){
 }
 function prefetchPortal(){
   if(C.kind!=='employer')return;
+  if(MOBILE_FAST_PATH||REDUCED_NETWORK)return;
   let inflight=false,queued=null;
   const warmPath=async pathname=>{
     if(inflight||hasFreshCache(pathname)){queued=pathname;return}
     inflight=true;
     try{await prefetchPageData(pathname)}finally{
       inflight=false;
-      if(queued&&queued!==pathname){const next=queued;queued=null;setTimeout(()=>warmPath(next),120)}else queued=null;
+      if(queued&&queued!==pathname){const next=queued;queued=null;setTimeout(()=>warmPath(next),160)}else queued=null;
     }
   };
   for(const a of $$('.nav a[href^="/"],.mobile-nav-links a[href^="/"]')){
     const warm=()=>{try{const u=new URL(a.href,location.origin);warmPath(u.pathname)}catch{}};
     a.addEventListener('mouseenter',warm,{passive:true});
     a.addEventListener('focus',warm,{passive:true});
-    a.addEventListener('pointerdown',warm,{passive:true});
   }
-  // Warm the most-used list pages slowly and one-at-a-time. This avoids the previous
-  // burst of 15+ Edge Function calls that made the whole portal feel slow.
   const common=['/company.html','/people.html','/programs.html','/pools.html','/testing.html','/results.html','/documents.html','/billing.html'];
   let i=0;
   const next=()=>{
     if(i>=common.length)return;
     const h=common[i++];
-    if(h===location.pathname||hasFreshCache(h)){setTimeout(next,700);return}
-    warmPath(h).finally(()=>setTimeout(next,900));
+    if(h===location.pathname||hasFreshCache(h)){setTimeout(next,1000);return}
+    warmPath(h).finally(()=>setTimeout(next,1300));
   };
-  setTimeout(next,1800);
+  setTimeout(next,3000);
 }
 async function refresh(){
   let timer=setTimeout(slowSpinner,400);
@@ -1052,18 +1066,24 @@ async function boot(){
     // already cached and do not need to block every page transition.
     if(haveCachedCtx){
       clearTimeout(timer);stopSpinner();prefetchPortal();
-      // Never block navigation on Supabase when we already have a usable shell/cache.
-      // Fresh data arrives in the background and replaces cached content when ready.
-      Promise.resolve().then(async()=>{
-        try{const freshData=await load();data=freshData;cachePage(data);renderCurrent()}catch(e){if(!cp)notice(e.message||String(e))}
-      });
+      const refreshDelay=(MOBILE_FAST_PATH||REDUCED_NETWORK)?350:0;
       setTimeout(async()=>{
+        try{const freshData=await load();data=freshData;cachePage(data);renderCurrent()}catch(e){if(!cp)notice(e.message||String(e))}
+      },refreshDelay);
+      const needCtx=canBackgroundValidate(CTX_CHECK_KEY,5*60*1000);
+      const needBrand=canBackgroundValidate(BRAND_CHECK_KEY,15*60*1000);
+      if(needCtx||needBrand)setTimeout(async()=>{
         try{
-          const [freshCtx,freshBrand]=await Promise.all([access(),loadBranding()]);
-          if(freshCtx){ctx=freshCtx;jsonSet(localStorage,CTX_CACHE,ctx);window.portalCtx=ctx}
-          if(freshBrand){brandState=freshBrand;jsonSet(localStorage,BRAND_CACHE,brandState);applyBranding()}
+          const jobs=[];
+          if(needCtx)jobs.push(access().then(v=>({kind:'ctx',v})));
+          if(needBrand)jobs.push(loadBranding().then(v=>({kind:'brand',v})));
+          const fresh=await Promise.all(jobs);
+          for(const x of fresh){
+            if(x.kind==='ctx'&&x.v){ctx=x.v;jsonSet(localStorage,CTX_CACHE,ctx);window.portalCtx=ctx;markValidated(CTX_CHECK_KEY)}
+            if(x.kind==='brand'&&x.v){brandState=x.v;jsonSet(localStorage,BRAND_CACHE,brandState);applyBranding();markValidated(BRAND_CHECK_KEY)}
+          }
         }catch{}
-      },1500);
+      },(MOBILE_FAST_PATH||REDUCED_NETWORK)?3500:1800);
       return;
     }
 
@@ -1073,7 +1093,7 @@ async function boot(){
     if(ctx.requires_workspace_selection){location.replace('/workspace.html');return}
     if(ctx.membership?.id)localStorage.setItem(storageKey(),ctx.membership.id);
     if(ctx.subscription?.id)localStorage.setItem(subKey(),ctx.subscription.id);
-    jsonSet(localStorage,CTX_CACHE,ctx);if(brandState)jsonSet(localStorage,BRAND_CACHE,brandState);cachePage(data);
+    jsonSet(localStorage,CTX_CACHE,ctx);markValidated(CTX_CHECK_KEY);if(brandState){jsonSet(localStorage,BRAND_CACHE,brandState);markValidated(BRAND_CHECK_KEY)}cachePage(data);
     applyBranding();shell(ctx);window.portalCtx=ctx;renderCurrent();clearTimeout(timer);stopSpinner();prefetchPortal();
   }catch(err){
     const msg=String(err?.message||err||'');
@@ -1082,6 +1102,6 @@ async function boot(){
     document.body.innerHTML=`<main class="login-page"><section class="login-card"><img class="login-logo" src="/images/workforce-non-dot.png" alt="screenings4u"><h1>Portal unavailable</h1><p>${esc(msg||'This NON-DOT Workforce portal could not be loaded.')}</p><a class="btn primary" href="/login.html">Return to sign in</a></section></main>`;
   }
 }
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js?v=20261007-navpersist1').catch(()=>{}),{once:true})}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js?v=20261007-auth401fix1').catch(()=>{}),{once:true})}
 boot();
 })();
