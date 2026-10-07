@@ -24,7 +24,7 @@ const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboa
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
-const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:norm(id)==='pool'?{id:'pool',label:'Pool Management',icon:'⊙'}:norm(id)==='selection'?{id:'selection',label:'Random Selection Management',icon:'✦'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
+const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:norm(id)==='pool'?{id:'pool',label:'Pool Management',icon:'⊙'}:norm(id)==='selection'?{id:'selection',label:'Random Selection Management',icon:'✦'}:norm(id)==='testing-order'?{id:'testing-order',label:'Testing Order',icon:'◆'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[];
 
@@ -39,7 +39,7 @@ async function invoke(name,body={}){
   return d;
 }
 async function access(){return invoke(apiName(),{action:'session_context',portal_code:C.portalCode,requested_portal_code:C.portalCode,requested_page:page()})}
-async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}if(C.kind==='employer'&&p==='programs')return invoke('nondot-employer-programs',{action:'workspace'});if(C.kind==='employer'&&p==='program'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-programs',{action:'detail',id}):invoke('nondot-employer-programs',{action:'new'})}if(C.kind==='employer'&&p==='pools')return invoke('nondot-employer-pools',{action:'workspace'});if(C.kind==='employer'&&p==='pool'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-pools',{action:'detail',id}):invoke('nondot-employer-pools',{action:'new'})}if(C.kind==='employer'&&p==='selections')return invoke('nondot-employer-selections',{action:'workspace'});if(C.kind==='employer'&&p==='selection'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-selections',{action:'detail',id}):invoke('nondot-employer-selections',{action:'new'})}return invoke(apiName(),{action:'workspace',page:p})}
+async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}if(C.kind==='employer'&&p==='programs')return invoke('nondot-employer-programs',{action:'workspace'});if(C.kind==='employer'&&p==='program'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-programs',{action:'detail',id}):invoke('nondot-employer-programs',{action:'new'})}if(C.kind==='employer'&&p==='pools')return invoke('nondot-employer-pools',{action:'workspace'});if(C.kind==='employer'&&p==='pool'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-pools',{action:'detail',id}):invoke('nondot-employer-pools',{action:'new'})}if(C.kind==='employer'&&p==='selections')return invoke('nondot-employer-selections',{action:'workspace'});if(C.kind==='employer'&&p==='selection'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-selections',{action:'detail',id}):invoke('nondot-employer-selections',{action:'new'})}if(C.kind==='employer'&&p==='testing')return invoke('nondot-employer-testing',{action:'workspace'});if(C.kind==='employer'&&p==='testing-order'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-testing',{action:'detail',id}):invoke('nondot-employer-testing',{action:'new'})}if(C.kind==='employer'&&p==='results')return invoke('nondot-employer-results',{action:'workspace'});return invoke(apiName(),{action:'workspace',page:p})}
 
 function displayName(c){
   return String(c?.organization?.legal_name||c?.employer?.legal_name||c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.plan?.name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
@@ -53,7 +53,7 @@ function shell(c){
   document.body.dataset.portalPage=current;
   NAV=navRows(c);
   const planLabel=displayName(c);
-  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people')||(current==='program'&&norm(x.id)==='programs')||(current==='pool'&&norm(x.id)==='pools')||(current==='selection'&&norm(x.id)==='selections');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
+  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people')||(current==='program'&&norm(x.id)==='programs')||(current==='pool'&&norm(x.id)==='pools')||(current==='selection'&&norm(x.id)==='selections')||(current==='testing-order'&&norm(x.id)==='testing');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
   document.title=`${cfgPage(current).label} | ${planLabel}`;
   document.body.className='loading';
   document.body.innerHTML=`<div class="app">
@@ -125,7 +125,7 @@ const COLS={
   programs:[['Program',['name']],['Workforce',['enrolled_count'],v=>`${esc(v||0)} enrolled`],['Panel',['testing_panel']],['Method',['testing_method']],['Schedule',['testing_frequency'],v=>pretty(v)],['Drug Rate',['drug_random_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_random_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   pools:[['Pool',['name']],['Type',['pool_type']],['Program',['program_id']],['Schedule',['selection_schedule']],['Drug Rate',['drug_testing_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_testing_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   selections:[['Date',['selection_date','selected_at'],v=>fmt(v)],['Type',['selection_type']],['Population',['population_size']],['Selected',['selected_count','drug_selection_count','drug_selected']],['Status',['status'],v=>badge(v)]],
-  testing:[['Order',['order_number']],['Reason',['reason']],['Test',['test_type']],['Program Type',['program_type'],v=>badge(v||'NON_DOT')],['Status',['status'],v=>badge(v)],['Created',['created_at'],v=>fmt(v)]],
+  testing:[['Order',['order_number']],['Person',['employee.first_name'],(_,r)=>esc(personName(r.employee||{}))],['Reason',['reason'],v=>pretty(v)],['Service',['service_name','testing_panel']],['Program',['program.name','program_id']],['Status',['status'],v=>badge(v)],['Created',['created_at'],v=>fmt(v)]],
   results:[['Order',['testing_orders.order_number','order_number']],['Result',['final_status','verified_result','result'],v=>badge(v)],['Date',['result_date','finalized_at','created_at'],v=>fmt(v)],['Status',['notification_status','status'],v=>badge(v)]],
   compliance:[['Case',['case_number','id']],['Event',['event_type','case_type']],['Priority',['priority'],v=>badge(v)],['Opened',['opened_at','created_at'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   documents:[['File',['file_name','title']],['Type',['document_type']],['Uploaded',['uploaded_at','created_at'],v=>fmt(v)],['Expires',['expires_at'],v=>fmt(v)],['Status',['status','access_level'],v=>badge(v)]],
@@ -223,6 +223,8 @@ function bindRows(){
   $$('[data-invite]').forEach(b=>b.onclick=async()=>{try{const d=await invoke(apiName(),{action:'invite_employee',employee_id:b.dataset.invite});notice(`Self-service invitation sent${d.portal_code?` to ${pretty(d.portal_code)}`:''}.`,'good')}catch(err){notice(err.message||String(err))}});
   $$('[data-invoice-view]').forEach(b=>b.onclick=()=>viewInvoice(b.dataset.invoiceView));
   $$('[data-invoice-pay]').forEach(b=>b.onclick=()=>payInvoice(b.dataset.invoicePay));
+  $$('[data-result-view]').forEach(b=>b.onclick=()=>viewResult(b.dataset.resultView));
+  $$('[data-result-download]').forEach(b=>b.onclick=()=>downloadResultPdf(b.dataset.resultDownload));
 }
 
 function selfNotice(){return `<div class="notice" style="margin-top:14px"><strong>NON-DOT Workforce self-service</strong><div style="margin-top:4px">Your Employer manages these records. You can review your information and complete assigned Consents & Acknowledgments from this portal.</div></div>`}
@@ -251,8 +253,8 @@ function renderMgmt(p){
   if(p==='programs')return `${metrics([['Programs',(data.programs||[]).length,'Random testing programs'],['Active',(data.programs||[]).filter(x=>x.status==='active').length,'Currently active'],['Enrolled',(data.programs||[]).reduce((n,x)=>n+Number(x.enrolled_count||0),0),'Program enrollments'],['Surface','NON-DOT','Company policy']])}<div style="height:14px"></div>${table('Random Testing Programs',data.programs||[],COLS.programs,r=>rowButtons(r,'program'))}`;if(p==='program')return renderProgram();
   if(p==='pools')return table('NON-DOT Random Testing Pools',data.pools||[],[['Pool',['name']],['Members',['member_count']],['Program',['program.name','program_id']],['Schedule',['selection_schedule']],['Drug Rate',['drug_testing_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_testing_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],r=>rowButtons(r,'pool'));if(p==='pool')return renderPool();
   if(p==='selections')return renderSelectionsIndex();if(p==='selection')return renderSelection();
-  if(p==='testing')return table('NON-DOT Testing Orders',data.testing_orders||[],COLS.testing,r=>['created','assigned','employee_notified','scheduled'].includes(String(r.status))?`<button class="btn ghost" style="padding:6px 9px" data-cancel-testing="${esc(r.id)}" type="button">Cancel</button>`:'');
-  if(p==='results')return table('NON-DOT Testing Results',data.results||[],COLS.results);
+  if(p==='testing')return table('NON-DOT Testing Orders',data.testing_orders||[],COLS.testing,r=>`<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/testing-order.html?id=${encodeURIComponent(r.id)}">View Order</a>`);if(p==='testing-order')return renderTestingOrder();
+  if(p==='results')return renderResultsIndex();
   if(p==='compliance')return `${table('NON-DOT Compliance Cases',data.cases||[],COLS.compliance)}${(data.tasks||[]).length?table('Compliance Tasks',data.tasks||[],[['Task',['title','task_type']],['Due',['due_at'],v=>fmt(v)],['Status',['status'],v=>badge(v)]]):''}`;
   if(p==='documents')return table('Workforce Documents',data.documents||[],COLS.documents);
   if(p==='notifications')return table('Notifications',data.notifications||[],COLS.notifications);
@@ -389,16 +391,136 @@ async function previewSelection(poolId){const box=$('#selectionPreview');if(!box
 async function saveSelectionDraft(){const f=$('#selectionForm');if(!f)return null;const vals=Object.fromEntries(new FormData(f).entries());vals.id=data?.event?.id||undefined;const out=await invoke('nondot-employer-selections',{action:'save_draft',selection:vals});data.event=out.event;return out}
 function bindSelection(){const f=$('#selectionForm');if(!f)return;const pool=f.elements.pool_id;pool.onchange=()=>previewSelection(pool.value);if(pool.value)previewSelection(pool.value);const save=$('#saveSelection');if(save)save.onclick=async()=>{try{const out=await saveSelectionDraft();selectionPageNotice('Draft saved.');if(!new URLSearchParams(location.search).get('id'))setTimeout(()=>location.href=`/selection.html?id=${encodeURIComponent(out.event.id)}`,250)}catch(err){selectionPageNotice(err.message||String(err),'bad')}};const run=$('#runSelection');if(run)run.onclick=async()=>{try{const out=await saveSelectionDraft();const ok=await confirmBox('Run and Lock Selection','Run this random selection now? After it runs, the selection, population snapshot, and selected people are permanently locked and cannot be edited or have people added or removed.');if(!ok)return;await invoke('nondot-employer-selections',{action:'run',id:out.event.id});location.href=`/selection.html?id=${encodeURIComponent(out.event.id)}`}catch(err){selectionPageNotice(err.message||String(err),'bad')}};const cancel=$('#cancelSelection');if(cancel)cancel.onclick=async()=>{const ok=await confirmBox('Cancel Draft','Cancel this draft selection? Completed locked selections cannot be cancelled.');if(!ok)return;try{await invoke('nondot-employer-selections',{action:'cancel',id:data.event.id});location.href='/selections.html'}catch(err){selectionPageNotice(err.message||String(err),'bad')}}}
 
+
+function serviceOptionLabel(x){return `${x.name} — ${x.specimen||'Specimen'} — ${money(x.unit_price,x.currency||'USD')} billed to account`}
+function renderTestingOrder(){
+  const o=data?.order||null;
+  if(o){
+    const ch=data?.charge||{}, emp=data?.employee||{}, program=data?.program||{}, pool=data?.pool||{};
+    return `<div class="person-page-head"><div><span>NON-DOT Testing Order</span><h2>${esc(o.order_number||'Testing Order')}</h2><p>This order is sent directly to screenings4u Management for processing and account billing.</p></div>${badge(o.status||'created')}</div><div id="testingOrderNotice"></div>${metrics([['Person',personName(emp),'Employee / NON-DOT Driver'],['Service',ch.service_name||o.testing_panel||'—','Testing service'],['Charge',money(ch.unit_price||0,ch.currency||'USD'),'Bill to account'],['Billing',pretty(ch.billing_status||'unbilled'),'Management billing queue']])}<div style="height:14px"></div><div class="person-form-grid"><section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Order Details</h3><p>Testing instructions and source records.</p></div></div><div class="person-fields"><div class="person-field"><label>Order Number</label><strong>${esc(o.order_number||'—')}</strong></div><div class="person-field"><label>Status</label><strong>${esc(pretty(o.status||'—'))}</strong></div><div class="person-field"><label>Reason</label><strong>${esc(pretty(o.reason||'—'))}</strong></div><div class="person-field"><label>Test Type</label><strong>${esc(pretty(o.test_type||'—'))}</strong></div><div class="person-field"><label>Program</label><strong>${esc(program.name||'—')}</strong></div><div class="person-field"><label>Pool</label><strong>${esc(pool.name||'Not linked')}</strong></div><div class="person-field"><label>Created</label><strong>${esc(fmt(o.created_at))}</strong></div><div class="person-field"><label>Collection Deadline</label><strong>${esc(fmt(o.collection_deadline))}</strong></div></div></section><section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Person</h3><p>Employee or NON-DOT Driver assigned to this order.</p></div></div><div class="person-fields"><div class="person-field"><label>Name</label><strong>${esc(personName(emp))}</strong></div><div class="person-field"><label>Employee #</label><strong>${esc(emp.employee_number||'—')}</strong></div><div class="person-field"><label>Email</label><strong>${esc(emp.email||'—')}</strong></div><div class="person-field"><label>Phone</label><strong>${esc(emp.mobile||'—')}</strong></div></div></section></div><div class="person-savebar"><a class="btn ghost" href="/testing.html">Back to Testing Orders</a>${['created','assigned','employee_notified','scheduled'].includes(String(o.status))?'<button class="btn ghost danger" type="button" id="cancelTestingOrder">Cancel Order</button>':''}</div>`;
+  }
+  const services=data?.services||[], employees=data?.employees||[], programs=data?.programs||[], pools=data?.pools||[];
+  const serviceOpts=services.map(x=>`<option value="${esc(x.id)}">${esc(serviceOptionLabel(x))}</option>`).join('');
+  const employeeOpts=employees.map(x=>`<option value="${esc(x.id)}">${esc(personName(x))}${x.employee_number?` — ${esc(x.employee_number)}`:''}${x.workforce_worker_type==='driver'?' — NON-DOT Driver':''}</option>`).join('');
+  const programOpts=programs.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}${x.status!=='active'?` — ${esc(pretty(x.status))}`:''}</option>`).join('');
+  const poolOpts=['<option value="">No pool / direct order</option>',...pools.map(x=>`<option value="${esc(x.id)}" data-program="${esc(x.program_id||'')}">${esc(x.name)}</option>`)].join('');
+  return `<form id="testingOrderForm" class="person-form"><div class="person-page-head"><div><span>NON-DOT Testing Order</span><h2>Create Testing Order</h2><p>Choose a NON-DOT drug or alcohol test for an employee or driver. No payment is collected here — the order is billed to your company account and sent directly to screenings4u Management.</p></div><span class="badge good">Bill to Account</span></div><div id="testingOrderNotice"></div><div class="notice" style="margin-bottom:14px"><strong>No checkout or card payment.</strong><div style="margin-top:4px">Submitting this form creates the testing order in the screenings4u NON-DOT Management portal and places the service charge in the unbilled account queue.</div></div><div class="person-form-grid"><section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Employee / Driver</h3><p>Select the person who will complete the test.</p></div></div><div class="person-fields"><div class="person-field full"><label>Employee / NON-DOT Driver *</label><select name="employee_id" required><option value="">Select a person</option>${employeeOpts}</select></div><div class="person-field"><label>NON-DOT Program *</label><select name="program_id" required><option value="">Select a program</option>${programOpts}</select></div><div class="person-field"><label>Random Pool</label><select name="pool_id">${poolOpts}</select></div></div></section><section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Testing Service</h3><p>Live NON-DOT testing services from the screenings4u catalog.</p></div></div><div class="person-fields"><div class="person-field full"><label>Drug / Alcohol Test *</label><select name="service_id" id="testingServiceSelect" required><option value="">Select a testing service</option>${serviceOpts}</select></div><div class="person-field full" id="testingServiceDetail"><div class="empty">Choose a testing service to see specimen, turnaround, and billing amount.</div></div></div></section><section class="person-card"><div class="person-card-head"><span>03</span><div><h3>Reason & Collection</h3><p>Tell screenings4u why the test is being ordered and any collection deadline.</p></div></div><div class="person-fields">${personSelect('reason','Testing reason','pre_employment',[['pre_employment','Pre-Employment'],['random','Random'],['reasonable_suspicion','Reasonable Suspicion'],['post_accident','Post-Accident'],['return_to_work','Return to Work'],['follow_up','Follow-Up'],['other','Other']],true)}${personSelect('collection_type','Collection handling','management_assigns',[['management_assigns','screenings4u Assigns Collection'],['collection_site','Collection Site'],['onsite','On-Site / Mobile Collection']])}${personInput('collection_deadline','Collection deadline',{},false,'datetime-local')}</div></section></div><div class="person-savebar"><a class="btn ghost" href="/testing.html">Cancel</a><button class="btn primary" type="submit">Submit Testing Order</button></div></form>`;
+}
+function testingOrderNotice(msg,kind='good'){const x=$('#testingOrderNotice');if(x)x.innerHTML=`<div class="notice ${kind==='bad'?'bad':''}">${esc(msg)}</div>`}
+function bindTestingOrder(){
+  const cancel=$('#cancelTestingOrder');if(cancel)cancel.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? The unbilled charge will be voided.');if(!ok)return;try{await invoke('nondot-employer-testing',{action:'cancel',id:data.order.id});location.reload()}catch(err){testingOrderNotice(err.message||String(err),'bad')}};
+  const f=$('#testingOrderForm');if(!f)return;
+  const services=data?.services||[], select=$('#testingServiceSelect'),detail=$('#testingServiceDetail');
+  const update=()=>{const x=services.find(v=>String(v.id)===String(select.value));if(!detail)return;if(!x){detail.innerHTML='<div class="empty">Choose a testing service to see specimen, turnaround, and billing amount.</div>';return}detail.innerHTML=`<div class="testing-service-summary"><strong>${esc(x.name)}</strong><span>${esc(x.category||'NON-DOT Testing')}</span><p>${esc(x.description||'')}</p><div>${esc(x.specimen||'Specimen not listed')} · ${esc(x.results||'Turnaround varies')} · <strong>${esc(money(x.unit_price,x.currency||'USD'))} billed to account</strong></div></div>`};
+  select.onchange=update;update();
+  const program=f.elements.program_id,pool=f.elements.pool_id;const syncPools=()=>{[...pool.options].forEach(o=>{const pid=o.dataset.program||'';o.hidden=!!pid&&!!program.value&&pid!==program.value;if(o.hidden&&o.selected)pool.value=''})};program.onchange=syncPools;syncPools();
+  f.onsubmit=async ev=>{ev.preventDefault();const vals=Object.fromEntries(new FormData(f).entries());try{const out=await invoke('nondot-employer-testing',{action:'create',order:vals});testingOrderNotice(`Testing order ${out.order.order_number} submitted to screenings4u Management for account billing.`);setTimeout(()=>location.href=`/testing-order.html?id=${encodeURIComponent(out.order.id)}`,350)}catch(err){testingOrderNotice(err.message||String(err),'bad')}};
+}
+
+
+function resultWorkflow(record){
+  const labels=['Ordered','Processing','At Lab','MRO Confirmation','Completed'];
+  const current=Math.max(1,Math.min(5,Number(record?.workflow_step||1)));
+  return `<div class="result-workflow" aria-label="Testing workflow">${labels.map((label,i)=>{const n=i+1;const state=n<current?'done':n===current?'current':'';return `<div class="result-step ${state}"><span>${n<current?'✓':n}</span><strong>${esc(label)}</strong></div>`}).join('')}</div>`;
+}
+function resultStatus(record){
+  const r=record?.result;
+  if(r&&r.final_status&&String(r.final_status)!=='pending')return badge(r.final_status);
+  return badge(record?.workflow_label||'Ordered');
+}
+function resultButtons(r){
+  return `<button class="btn ghost" style="padding:6px 9px" data-result-view="${esc(r.id)}" type="button">View</button><button class="btn primary" style="padding:6px 9px" data-result-download="${esc(r.id)}" type="button" ${r.download_ready?'':'disabled title="PDF becomes available when the result is completed"'}>Download PDF</button>`;
+}
+function renderResultsIndex(){
+  const rows=Array.isArray(data?.results)?data.results:[];
+  const cols=[
+    ['Order',['order_number']],
+    ['Person',['employee.first_name'],(_,r)=>esc(personName(r.employee||{}))],
+    ['Service',['charge.service_name','testing_panel']],
+    ['Result',['result.final_status'],(_,r)=>resultStatus(r)],
+    ['Workflow',['workflow_label'],(_,r)=>`<strong>${esc(r.workflow_label||'Ordered')}</strong>`],
+    ['Updated',['result.finalized_at','result.updated_at','updated_at','created_at'],v=>fmt(v)]
+  ];
+  const help=`<div class="notice results-help"><strong>Testing workflow</strong><div>Orders move through <b>Ordered</b> → <b>Processing</b> → <b>At Lab</b> → <b>MRO Confirmation</b> → <b>Completed</b>. Status updates and final results appear here as screenings4u testing management processes the order.</div></div>`;
+  return `${help}<div style="height:14px"></div>${table('NON-DOT Testing Results & Status',rows,cols,resultButtons)}`;
+}
+function primitivePayload(payload){
+  if(!payload||typeof payload!=='object')return [];
+  return Object.entries(payload).filter(([k,v])=>['string','number','boolean'].includes(typeof v)&&v!==''&&v!==null).slice(0,24);
+}
+async function viewResult(id){
+  try{
+    const d=await invoke('nondot-employer-results',{action:'detail',id});
+    const x=d.record||{},r=x.result||{},e=x.employee||{},payload=primitivePayload(r.sensitive_payload);
+    const details=`<div class="result-modal-body">${resultWorkflow(x)}<div class="result-summary-grid">
+      <div><small>Order</small><strong>${esc(x.order_number||'—')}</strong></div>
+      <div><small>Person</small><strong>${esc(personName(e))}</strong></div>
+      <div><small>Service</small><strong>${esc(x.charge?.service_name||x.testing_panel||'—')}</strong></div>
+      <div><small>Reason</small><strong>${esc(pretty(x.reason||'—'))}</strong></div>
+      <div><small>Workflow</small><strong>${esc(x.workflow_label||'Ordered')}</strong></div>
+      <div><small>Final Result</small><strong>${esc(pretty(r.final_status||'Pending'))}</strong></div>
+      <div><small>Result Date</small><strong>${esc(fmt(r.result_date||r.finalized_at))}</strong></div>
+      <div><small>MRO Status</small><strong>${esc(pretty(r.mro_status||'Pending'))}</strong></div>
+    </div>${payload.length?`<div class="result-detail-card"><h3>Result Details</h3><div class="result-kv">${payload.map(([k,v])=>`<div><span>${esc(pretty(k))}</span><strong>${esc(v)}</strong></div>`).join('')}</div></div>`:''}</div>`;
+    const b=modalShell(`Result ${x.order_number||''}`,details,`<button class="btn ghost" data-close type="button">Close</button>${x.download_ready?`<button class="btn primary" data-download type="button">Download PDF</button>`:''}`,true);
+    b.querySelector('[data-close]').onclick=()=>b.remove();
+    const dl=b.querySelector('[data-download]');if(dl)dl.onclick=()=>downloadResultPdfRecord(x);
+  }catch(err){notice(err.message||String(err))}
+}
+function pdfEsc(v){return String(v??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[\r\n]+/g,' ')}
+function buildSimplePdf(lines){
+  const content=[];let y=760;
+  content.push('BT /F1 11 Tf');
+  for(const line of lines){content.push(`1 0 0 1 54 ${y} Tm (${pdfEsc(line)}) Tj`);y-=18;if(y<60)break}
+  content.push('ET');
+  const stream=content.join('\\n');
+  const objects=[
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${stream.length} >>\\nstream\\n${stream}\\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+  ];
+  let pdf='%PDF-1.4\\n',offsets=[0];
+  objects.forEach((o,i)=>{offsets.push(pdf.length);pdf+=`${i+1} 0 obj\\n${o}\\nendobj\\n`});
+  const xref=pdf.length;pdf+=`xref\\n0 ${objects.length+1}\\n0000000000 65535 f \\n`;
+  for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \\n';
+  pdf+=`trailer << /Size ${objects.length+1} /Root 1 0 R >>\\nstartxref\\n${xref}\\n%%EOF`;
+  return new Blob([pdf],{type:'application/pdf'});
+}
+function downloadResultPdfRecord(x){
+  const r=x.result||{},e=x.employee||{},payload=primitivePayload(r.sensitive_payload);
+  const lines=[
+    'screenings4u Workforce NON-DOT Testing Result',
+    '',
+    `Order: ${x.order_number||'—'}`,
+    `Employee / Driver: ${personName(e)}`,
+    `Employee #: ${e.employee_number||'—'}`,
+    `Service: ${x.charge?.service_name||x.testing_panel||'—'}`,
+    `Program: ${x.program?.name||'—'}`,
+    `Reason: ${pretty(x.reason||'—')}`,
+    `Workflow Status: ${x.workflow_label||'Completed'}`,
+    `Final Result: ${pretty(r.final_status||'Pending')}`,
+    `Preliminary Result: ${pretty(r.preliminary_status||'Pending')}`,
+    `MRO Status: ${pretty(r.mro_status||'Pending')}`,
+    `Result Date: ${fmt(r.result_date||r.finalized_at)}`,
+    `Finalized: ${fmt(r.finalized_at)}`,
+    '',
+    ...payload.map(([k,v])=>`${pretty(k)}: ${String(v)}`),
+    '',
+    'This report was generated from the screenings4u Workforce Employer portal.'
+  ];
+  const blob=buildSimplePdf(lines),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`${String(x.order_number||'NON-DOT-result').replace(/[^a-zA-Z0-9_-]+/g,'-')}.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function downloadResultPdf(id){
+  try{const d=await invoke('nondot-employer-results',{action:'detail',id});if(!d.record?.download_ready)throw new Error('The PDF will be available after the testing result is completed.');downloadResultPdfRecord(d.record)}catch(err){notice(err.message||String(err))}
+}
+
 function managementActions(p){
   if(C.kind==='self')return;
   if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');if(p==='contact')addAction('Back to Company',()=>location.href='/company.html');if(p==='programs')addAction('Add Random Testing Program',()=>location.href='/program.html');if(p==='program')addAction('Back to Programs',()=>location.href='/programs.html');if(p==='pools')addAction('Add NON-DOT Pool',()=>location.href='/pool.html');if(p==='pool')addAction('Back to Pools',()=>location.href='/pools.html');if(p==='selections')addAction('Create Random Selection',()=>location.href='/selection.html');if(p==='selection')addAction('Back to Random Selections',()=>location.href='/selections.html');
-  if(p==='testing')addAction('Create Testing Order',()=>formModal('Create NON-DOT Testing Order',[
-    ...(C.kind==='ctpa'?[{name:'employer_id',label:'Employer',type:'select',required:true,options:(data.employers||[]).map(x=>({value:x.id,label:x.legal_name||x.id}))}]:[]),
-    {name:'employee_id',label:'Employee / NON-DOT Driver',type:'select',required:true,options:(data.employees||[]).map(x=>({value:x.id,label:personName(x)=== '—'?x.id:personName(x)}))},
-    {name:'program_id',label:'NON-DOT Program',type:'select',required:true,options:(data.programs||[]).map(x=>({value:x.id,label:x.name||x.id}))},
-    {name:'reason',label:'Reason',type:'select',options:['pre_employment','random','reasonable_suspicion','post_accident','return_to_work','follow_up','other'].map(x=>({value:x,label:pretty(x)}))},
-    {name:'test_type',label:'Test type',type:'select',options:[{value:'drug',label:'Drug'},{value:'alcohol',label:'Alcohol'},{value:'drug_and_alcohol',label:'Drug + Alcohol'}]}
-  ],{},async v=>invoke(apiName(),{action:'create_testing',testing:v})));
+  if(p==='testing')addAction('Create Testing Order',()=>location.href='/testing-order.html');if(p==='testing-order')addAction('Back to Testing Orders',()=>location.href='/testing.html');
   if(C.kind==='employer'&&p==='company')addAction('Add Contact',()=>location.href='/contact.html');
   if(C.kind==='employer'&&p==='locations')addAction('Add Location',()=>formModal('Add Location',locationFields,{},async v=>invoke(apiName(),{action:'save_location',location:v})));
   }
@@ -412,8 +534,8 @@ function subtitleFor(p){
     programs:'Create and manage your company’s NON-DOT random testing programs for employees and NON-DOT drivers.',program:'Create or manage a complete NON-DOT random testing program and its workforce enrollment.',
     pools:'Your NON-DOT random testing pool records. Use View / Manage to control pool membership and settings.',pool:'Create or manage a NON-DOT random testing pool and its employee membership.',
     selections:'Create and review NON-DOT random selection events. Completed selections are permanently locked.',selection:'Prepare, run, and review a NON-DOT random selection. Once run, the selection is locked and cannot be changed.',
-    testing:'Create and track NON-DOT testing orders under company policy.',
-    results:'Review NON-DOT testing results available to this account.',
+    testing:'Order NON-DOT drug and alcohol tests for employees and drivers. Orders are billed to your company account and sent directly to screenings4u Management.','testing-order':'Create or review a bill-to-account NON-DOT testing order.',
+    results:'Track NON-DOT testing from order through lab and MRO review, then view or download completed results.',
     compliance:'Track company-policy NON-DOT compliance cases and follow-up tasks.',
     documents:'Review documents associated with the NON-DOT Workforce program.',
     consents:'Review and complete company-policy consents and acknowledgments.',
@@ -440,7 +562,7 @@ async function refresh(){
     const p=norm(page());
     if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
     if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
-    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();if(p==='pool')bindPool();if(p==='selection')bindSelection();
+    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();if(p==='pool')bindPool();if(p==='selection')bindSelection();if(p==='testing-order')bindTestingOrder();
     $$('[data-cancel-testing]').forEach(b=>b.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? Completed testing history is not removed.');if(!ok)return;try{await invoke(apiName(),{action:'cancel_testing',id:b.dataset.cancelTesting});notice('Testing order cancelled.','good');await refresh()}catch(err){notice(err.message||String(err))}});
     $$('[data-consent]').forEach(b=>b.onclick=()=>formModal('Complete Consent / Acknowledgment',[{name:'acknowledged_name',label:'Type your full name',required:true},{name:'accepted',label:'I acknowledge and accept',type:'select',options:[{value:'true',label:'Yes'}]}],{},async v=>invoke(apiName(),{action:'complete_consent_assignment',assignment_id:b.dataset.consent,acknowledged_name:v.acknowledged_name,accepted:v.accepted==='true'})));
   }catch(err){notice(err.message||String(err));if($('#content'))$('#content').innerHTML='<div class="panel"><div class="empty">Unable to load this page.</div></div>'}
