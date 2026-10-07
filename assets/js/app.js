@@ -37,7 +37,7 @@ async function access(){return invoke(apiName(),{action:'session_context',portal
 async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});return invoke(apiName(),{action:'workspace',page:p})}
 
 function displayName(c){
-  return String(c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
+  return String(c?.organization?.legal_name||c?.employer?.legal_name||c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.plan?.name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
 }
 function navRows(c){
   const allowed=Array.isArray(c?.navigation)&&c.navigation.length?c.navigation:C.pages;
@@ -233,7 +233,7 @@ function renderMgmt(p){
   if(p==='dashboard'){
     const top=C.kind==='ctpa'?
       [['Client Employers',(data.employers||[]).length,'Managed Employer accounts'],['Workers',(data.employees||[]).length,'Employees / NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity']]:
-      [['Workers',(data.employees||[]).length,'Employees / NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity'],['Plan',ctx?.subscription?.plan_name||data?.subscription?.workforce_plans?.name||data?.subscription?.plan_name||'—','Workforce subscription']];
+      [['Workers',(data.employees||[]).length,'Employees / NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity'],['Plan',ctx?.plan?.name||ctx?.subscription?.plan_name||data?.plan?.name||data?.subscription?.workforce_plans?.name||data?.subscription?.plan_name||'—','Workforce subscription']];
     return `${metrics(top)}${quickCards()}`;
   }
   if(p==='employers')return table('Client Employers',data.employers||[],COLS.employers,r=>rowButtons(r,'employer'));
