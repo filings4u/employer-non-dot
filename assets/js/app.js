@@ -24,7 +24,7 @@ const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboa
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
-const cfgPage=id=>C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'};
+const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[];
 
@@ -39,7 +39,7 @@ async function invoke(name,body={}){
   return d;
 }
 async function access(){return invoke(apiName(),{action:'session_context',portal_code:C.portalCode,requested_portal_code:C.portalCode,requested_page:page()})}
-async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});return invoke(apiName(),{action:'workspace',page:p})}
+async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}return invoke(apiName(),{action:'workspace',page:p})}
 
 function displayName(c){
   return String(c?.organization?.legal_name||c?.employer?.legal_name||c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.plan?.name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
@@ -53,7 +53,7 @@ function shell(c){
   document.body.dataset.portalPage=current;
   NAV=navRows(c);
   const planLabel=displayName(c);
-  const links=NAV.map(x=>`<a href="${esc(x.href)}" class="${current===norm(x.id)?'active':''}"${current===norm(x.id)?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`).join('');
+  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
   document.title=`${cfgPage(current).label} | ${planLabel}`;
   document.body.className='loading';
   document.body.innerHTML=`<div class="app">
@@ -100,7 +100,7 @@ function notice(message,type='bad'){
   t.innerHTML=`<div class="notice" style="border-left:4px solid ${type==='good'?'#17764a':'#ef6c00'};margin-bottom:14px"><strong>${type==='good'?'Success':'Notice'}</strong><div style="margin-top:4px">${esc(message)}</div></div>`;
   setTimeout(()=>{if(t)t.innerHTML=''},5500);
 }
-function modalShell(title,body,buttons='',wide=false){const b=document.createElement('div');b.className='modal-backdrop';b.innerHTML=`<div class="modal${wide?' modal-wide':''}"><h2>${esc(title)}</h2>${body}<div class="modal-actions">${buttons}</div></div>`;document.body.appendChild(b);return b}
+function modalShell(title,body,buttons='',wide=false){const b=document.createElement('div');b.className='modal-backdrop';b.innerHTML=`<div class="modal${wide?' modal-wide':''}"><div class="brand-modal-head"><img src="/images/workforce-non-dot.png" alt="Workforce NON DOT"><div><small>Workforce NON DOT</small><h2>${esc(title)}</h2></div></div>${body}<div class="modal-actions">${buttons}</div></div>`;document.body.appendChild(b);return b}
 function confirmBox(title,message){return new Promise(resolve=>{const b=modalShell(title,`<p style="line-height:1.6;color:#52657a">${esc(message)}</p>`,`<button class="btn ghost" data-no type="button">Cancel</button><button class="btn primary" data-yes type="button">Continue</button>`);b.querySelector('[data-no]').onclick=()=>{b.remove();resolve(false)};b.querySelector('[data-yes]').onclick=()=>{b.remove();resolve(true)}})}
 function fieldHtml(f,v={}){
   const value=v[f.name]??f.value??'';
@@ -121,7 +121,7 @@ const percent=v=>v===null||v===undefined||v===''?'—':`${Number(v)}%`;
 
 const COLS={
   employers:[['Employer',['legal_name','workforce_display_name']],['Status',['status'],v=>badge(v)],['Primary Contact',['primary_contact_email']],['State',['state']]],
-  employees:[['Name',['first_name'],(v,r)=>esc(personName(r))],['Employee #',['employee_number']],['Worker Type',['workforce_worker_type'],v=>badge(v==='driver'?'NON-DOT Driver':v)],['Job Title',['job_title']],['Safety Sensitive',['safety_sensitive'],v=>badge(v===true?'yes':v===false?'no':'—')],['Status',['employment_status'],v=>badge(v)]],
+  employees:[['Name',['first_name'],(v,r)=>esc(personName(r))],['Type',['workforce_worker_type'],v=>badge(v==='driver'?'NON-DOT Driver':'Employee')],['Employee #',['employee_number']],['Department',['department']],['Job Title',['job_title']],['Contact',['email'],(v,r)=>`<strong>${esc(r.email||'—')}</strong><br><small>${esc(r.mobile||'—')}</small>`],['Safety Sensitive',['safety_sensitive'],v=>badge(v===true?'yes':v===false?'no':'—')],['Status',['employment_status'],v=>badge(v)]],
   programs:[['Program',['name']],['Type',['program_type'],v=>badge(v||'NON_DOT')],['Category',['regulatory_category']],['Panel',['testing_panel']],['Method',['testing_method']],['Drug Rate',['drug_random_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_random_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   pools:[['Pool',['name']],['Type',['pool_type']],['Program',['program_id']],['Schedule',['selection_schedule']],['Drug Rate',['drug_testing_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_testing_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   selections:[['Date',['selection_date','selected_at'],v=>fmt(v)],['Type',['selection_type']],['Population',['population_size']],['Selected',['selected_count','drug_selection_count','drug_selected']],['Status',['status'],v=>badge(v)]],
@@ -152,7 +152,7 @@ function quickCards(){
   return `<div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Quick Actions</h2><p>Open another area of your NON-DOT Workforce portal.</p></div></div><div class="cards" style="padding:14px">${rows.map(x=>`<a class="card" href="${esc(x.href)}"><strong>${esc(x.label)}</strong><span>${esc(cardCopy(norm(x.id)))}</span></a>`).join('')}</div></div>`;
 }
 function cardCopy(id){const m={employers:'Manage customer Employer accounts.',company:'Review company and contact information.',people:'Manage Employees and NON-DOT Drivers.',programs:'Create and maintain NON-DOT testing programs.',pools:'Manage NON-DOT random testing pools.',selections:'Review NON-DOT random selection events.',testing:'Create and track NON-DOT testing orders.',results:'Review testing results available to this account.',compliance:'Track company-policy compliance cases and tasks.',documents:'Review Workforce program documents.',consents:'Manage consents and acknowledgments.',reports:'Review available Workforce reporting.',notifications:'Review portal notifications.',billing:'Review billing and invoices.',team:'Review users and roles.',locations:'Manage company locations.',branding:'Review portal branding.',integrations:'Review enabled integrations.','audit-history':'Review account activity history.',profile:'Review your Workforce profile.','my-testing':'Review testing assigned to you.','my-results':'Review results available to you.',training:'Review your training records.',credentials:'Review your credentials.'};return m[id]||'Open this portal area.'}
-function rowButtons(r,type){if(C.kind==='self')return'';return `<button class="btn ghost" style="padding:6px 9px" data-edit="${type}" data-id="${esc(r.id)}" type="button">Edit</button><button class="btn ghost" style="padding:6px 9px" data-delete="${type}" data-id="${esc(r.id)}" type="button">Delete</button>${type==='employee'&&C.kind==='employer'?`<button class="btn ghost" style="padding:6px 9px" data-invite="${esc(r.id)}" type="button">Invite</button>`:''}`}
+function rowButtons(r,type){if(C.kind==='self')return'';if(type==='employee'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/person.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;return `<button class="btn ghost" style="padding:6px 9px" data-edit="${type}" data-id="${esc(r.id)}" type="button">Edit</button><button class="btn ghost" style="padding:6px 9px" data-delete="${type}" data-id="${esc(r.id)}" type="button">Delete</button>`}
 
 const employerFields=[
   {name:'legal_name',label:'Legal company name',required:true},{name:'dba_name',label:'DBA name'},
@@ -241,12 +241,12 @@ function renderSelf(p){
 function renderMgmt(p){
   if(p==='dashboard'){
     const top=C.kind==='ctpa'?
-      [['Client Employers',(data.employers||[]).length,'Managed Employer accounts'],['Workers',(data.employees||[]).length,'Employees / NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity']]:
-      [['Workers',(data.employees||[]).length,'Employees / NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity'],['Plan',ctx?.plan?.name||ctx?.subscription?.plan_name||data?.plan?.name||data?.subscription?.workforce_plans?.name||data?.subscription?.plan_name||'—','Workforce subscription']];
+      [['Client Employers',(data.employers||[]).length,'Managed Employer accounts'],['People',(data.employees||[]).length,'Employees + NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity']]:
+      [['People',(data.employees||[]).length,'Employees + NON-DOT Drivers'],['NON-DOT Programs',(data.programs||[]).length,'Company-policy programs'],['Testing Orders',(data.testing_orders||[]).length,'NON-DOT testing activity'],['Plan',ctx?.plan?.name||ctx?.subscription?.plan_name||data?.plan?.name||data?.subscription?.workforce_plans?.name||data?.subscription?.plan_name||'—','Workforce subscription']];
     return `${metrics(top)}${quickCards()}`;
   }
   if(p==='employers')return table('Client Employers',data.employers||[],COLS.employers,r=>rowButtons(r,'employer'));
-  if(p==='people')return table('Employees / NON-DOT Drivers',data.employees||[],COLS.employees,r=>rowButtons(r,'employee'));
+  if(p==='people')return `${metrics([['People',(data.employees||[]).length,'Employees + NON-DOT Drivers'],['Employees',(data.employees||[]).filter(x=>x.workforce_worker_type!=='driver').length,'Employee records'],['NON-DOT Drivers',(data.employees||[]).filter(x=>x.workforce_worker_type==='driver').length,'Driver records'],['Active',(data.employees||[]).filter(x=>x.employment_status==='active').length,'Currently active']])}<div style="height:14px"></div>${table('People',data.employees||[],COLS.employees,r=>rowButtons(r,'employee'))}`;if(p==='person')return renderPerson();
   if(p==='programs')return table('NON-DOT Programs',data.programs||[],COLS.programs,r=>rowButtons(r,'program'));
   if(p==='pools')return table('NON-DOT Random Testing Pools',data.pools||[],COLS.pools,r=>rowButtons(r,'pool'));
   if(p==='selections')return table('NON-DOT Random Selections',data.selections||[],COLS.selections);
@@ -270,9 +270,42 @@ function renderMgmt(p){
   return '<div class="panel"><div class="empty">No records available.</div></div>';
 }
 
+function renderPerson(){
+  const e=data?.employee||{},p=data?.profile||{},v={country:'US',...e,...p};
+  const type=e.workforce_worker_type||'employee';
+  return `<form id="personForm" class="person-form">
+    <div class="person-page-head"><div><span>People Management</span><h2>${e.id?`Manage ${esc(personName(e))}`:'Create Person'}</h2><p>Create a complete workforce record. Employee and NON-DOT Driver records remain clearly distinguished across the portal.</p></div><span class="badge ${type==='driver'?'warn':'good'}" id="personTypeBadge">${type==='driver'?'NON-DOT Driver':'Employee'}</span></div>
+    <div class="person-form-grid">
+      <section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Personal Information</h3><p>Identity and primary contact details.</p></div></div><div class="person-fields">
+        ${personInput('first_name','First name',v,true)}${personInput('middle_name','Middle name',v)}${personInput('last_name','Last name',v,true)}${personInput('date_of_birth','Birthdate',v,false,'date')}
+        ${personInput('email','Email',v,false,'email')}${personInput('mobile','Mobile phone',v,false,'tel')}${personInput('alternate_email','Alternate email',v,false,'email')}${personInput('work_phone','Work phone',v,false,'tel')}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Employment</h3><p>Role, department, worker classification, and status.</p></div></div><div class="person-fields">
+        ${personSelect('workforce_worker_type','Person type',type,[['employee','Employee'],['driver','NON-DOT Driver']],true)}${personInput('employee_number','Employee number',v)}${personInput('department','Department',v)}${personInput('job_title','Job title',v)}
+        ${personInput('hire_date','Hire date',v,false,'date')}${personInput('termination_date','Termination date',v,false,'date')}${personSelect('safety_sensitive','Safety-sensitive position',String(!!e.safety_sensitive),[['false','No'],['true','Yes']])}${personSelect('employment_status','Employment status',e.employment_status||'active',[['invited','Invited'],['pending_enrollment','Pending Enrollment'],['active','Active'],['suspended','Suspended'],['leave','Leave'],['inactive','Inactive'],['terminated','Terminated'],['compliance_hold','Compliance Hold']])}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>03</span><div><h3>Home Address</h3><p>Address maintained on the person record.</p></div></div><div class="person-fields">
+        ${personInput('address_line1','Street address',v,false,'text',true)}${personInput('address_line2','Address line 2',v,false,'text',true)}${personInput('city','City',v)}${personInput('state','State',v)}${personInput('postal_code','ZIP / Postal code',v)}${personInput('country','Country',v||{country:'US'})}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>04</span><div><h3>Emergency Contact</h3><p>Optional emergency contact for this person.</p></div></div><div class="person-fields">
+        ${personInput('emergency_contact_name','Contact name',v)}${personInput('emergency_contact_relationship','Relationship',v)}${personInput('emergency_contact_phone','Phone',v,false,'tel')}
+      </div></section>
+      <section class="person-card driver-card" id="driverSection"><div class="person-card-head"><span>05</span><div><h3>NON-DOT Driver & Vehicle</h3><p>Vehicle information appears only for NON-DOT Driver records.</p></div></div><div class="person-fields">
+        ${personInput('vehicle_type','Vehicle type',v)}${personInput('vehicle_year','Year',v,false,'number')}${personInput('vehicle_make','Make',v)}${personInput('vehicle_model','Model',v)}${personInput('vehicle_color','Color',v)}${personInput('vehicle_unit_number','Unit / Fleet number',v)}${personInput('vehicle_vin','VIN',v,false,'text',true)}${personInput('vehicle_plate','License plate',v)}${personInput('vehicle_plate_state','Plate state',v)}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>06</span><div><h3>Internal Notes</h3><p>Employer-only notes about this workforce record.</p></div></div><div class="person-fields"><div class="person-field full"><label>Notes</label><textarea name="notes" rows="5">${esc(v.notes||'')}</textarea></div></div></section>
+    </div>
+    <div class="person-savebar"><a class="btn ghost" href="/people.html">Cancel</a>${e.id?'<button class="btn ghost danger" type="button" id="archivePerson">Archive Record</button>':''}<button class="btn primary" type="submit">${e.id?'Save Changes':'Create Person'}</button></div>
+  </form>`;
+}
+function personInput(name,label,v,required=false,type='text',full=false){return `<div class="person-field ${full?'full':''}"><label>${esc(label)}${required?' *':''}</label><input name="${esc(name)}" type="${esc(type)}" value="${esc(v?.[name]??'')}" ${required?'required':''}></div>`}
+function personSelect(name,label,value,options,required=false){return `<div class="person-field"><label>${esc(label)}${required?' *':''}</label><select name="${esc(name)}" ${required?'required':''}>${options.map(([a,b])=>`<option value="${esc(a)}" ${String(value)===String(a)?'selected':''}>${esc(b)}</option>`).join('')}</select></div>`}
+function bindPerson(){const f=$('#personForm');if(!f)return;const type=f.elements.workforce_worker_type,driver=$('#driverSection'),badgeEl=$('#personTypeBadge');const sync=()=>{const is=type.value==='driver';driver.hidden=!is;badgeEl.textContent=is?'NON-DOT Driver':'Employee';badgeEl.className=`badge ${is?'warn':'good'}`};type.onchange=sync;sync();f.onsubmit=async ev=>{ev.preventDefault();const vals=Object.fromEntries(new FormData(f).entries());vals.id=data?.employee?.id||undefined;vals.safety_sensitive=vals.safety_sensitive==='true';try{const out=await invoke('nondot-employer-people',{action:'save',employee:vals});notice(data?.employee?.id?'Person record updated.':'Person record created.','good');setTimeout(()=>location.href=`/person.html?id=${encodeURIComponent(out.employee.id)}`,350)}catch(err){brandedMessage('Unable to save person',err.message||String(err))}};const a=$('#archivePerson');if(a)a.onclick=async()=>{const ok=await confirmBox('Archive Person','Archive this person from active People records? Historical testing and compliance records will remain available where required.');if(!ok)return;try{await invoke('nondot-employer-people',{action:'archive',id:data.employee.id});location.href='/people.html'}catch(err){brandedMessage('Unable to archive person',err.message||String(err))}}}
+function brandedMessage(title,message){const b=modalShell(title,`<p class="modal-message">${esc(message)}</p>`,`<button class="btn primary" data-close type="button">OK</button>`);b.querySelector('[data-close]').onclick=()=>b.remove()}
+
 function managementActions(p){
   if(C.kind==='self')return;
-  if(p==='people')addAction('Add Employee / Driver',()=>formModal('Add Employee / NON-DOT Driver',employeeFields(data.employers||[]),{},async v=>invoke(apiName(),{action:'save_employee',employee:{...v,safety_sensitive:v.safety_sensitive==='true'}})));
+  if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');
   if(p==='programs')addAction('Add NON-DOT Program',()=>formModal('Add NON-DOT Program',programFields(data.employers||[]),{},async v=>invoke(apiName(),{action:'save_program',program:v})));
   if(p==='pools')addAction('Add NON-DOT Pool',()=>formModal('Add NON-DOT Random Testing Pool',poolFields(data.employers||[],data.programs||[]),{},async v=>invoke(apiName(),{action:'save_pool',pool:v})));
   if(p==='testing')addAction('Create Testing Order',()=>formModal('Create NON-DOT Testing Order',[
@@ -290,7 +323,7 @@ function subtitleFor(p){
     dashboard:C.kind==='self'?'Your secure NON-DOT Workforce self-service dashboard.':C.kind==='ctpa'?'Manage customer Employers and their NON-DOT workforce programs, pools, testing, results, and compliance.':'Manage your company’s NON-DOT workforce program, employees / drivers, testing, and compliance.',
     employers:'Manage customer Employer accounts under your NON-DOT Workforce C/TPA program.',
     company:'Review your company profile and Workforce contacts.',
-    people:'Manage Employees and NON-DOT Drivers participating in your Workforce program.',
+    people:'Your employee and NON-DOT driver record center. Use View / Manage to open a complete person account.',person:'Create or manage the complete employee or NON-DOT driver account.',
     programs:'Create and manage company-policy NON-DOT testing programs. These programs are not DOT-regulated.',
     pools:'Manage NON-DOT random testing pools, rates, and selection schedules.',
     selections:'Review NON-DOT random selection events.',
@@ -322,12 +355,13 @@ async function refresh(){
     const p=norm(page());
     if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
     if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
-    managementActions(p);bindRows();
+    managementActions(p);bindRows();if(p==='person')bindPerson();
     $$('[data-cancel-testing]').forEach(b=>b.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? Completed testing history is not removed.');if(!ok)return;try{await invoke(apiName(),{action:'cancel_testing',id:b.dataset.cancelTesting});notice('Testing order cancelled.','good');await refresh()}catch(err){notice(err.message||String(err))}});
     $$('[data-consent]').forEach(b=>b.onclick=()=>formModal('Complete Consent / Acknowledgment',[{name:'acknowledged_name',label:'Type your full name',required:true},{name:'accepted',label:'I acknowledge and accept',type:'select',options:[{value:'true',label:'Yes'}]}],{},async v=>invoke(apiName(),{action:'complete_consent_assignment',assignment_id:b.dataset.consent,acknowledged_name:v.acknowledged_name,accepted:v.accepted==='true'})));
   }catch(err){notice(err.message||String(err));if($('#content'))$('#content').innerHTML='<div class="panel"><div class="empty">Unable to load this page.</div></div>'}
   finally{document.body.classList.remove('loading')}
 }
+window.S4UDialogs={message:brandedMessage,confirm:confirmBox};
 async function boot(){
   try{
     ctx=await access();
