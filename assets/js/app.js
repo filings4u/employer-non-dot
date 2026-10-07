@@ -9,8 +9,8 @@ if(localStorage.getItem('s4u_workforce_storage_schema')!==STORAGE_SCHEMA){
   localStorage.setItem('s4u_workforce_storage_schema',STORAGE_SCHEMA);
 }
 const sb=window.supabase.createClient(C.workforceUrl,C.workforceKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const FONT_KEY='s4u_employer_nondot_font_size';
-const FONT_DEFAULT=16,FONT_MIN=14,FONT_MAX=20;
+const FONT_KEY='s4u_employer_nondot_font_size_v2';
+const FONT_DEFAULT=13,FONT_MIN=12,FONT_MAX=18;
 function readFontSize(){const n=Number(localStorage.getItem(FONT_KEY));return Number.isFinite(n)?Math.min(FONT_MAX,Math.max(FONT_MIN,n)):FONT_DEFAULT}
 function applyFontSize(n){const v=Math.min(FONT_MAX,Math.max(FONT_MIN,Number(n)||FONT_DEFAULT));document.documentElement.style.setProperty('--portal-font-root',v+'px');localStorage.setItem(FONT_KEY,String(v));const label=document.getElementById('fontSizeValue');if(label)label.textContent=v===FONT_DEFAULT?'Default':String(v);return v}
 let portalFontSize=readFontSize();applyFontSize(portalFontSize);
@@ -24,7 +24,7 @@ const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboa
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
-const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
+const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[];
 
@@ -39,7 +39,7 @@ async function invoke(name,body={}){
   return d;
 }
 async function access(){return invoke(apiName(),{action:'session_context',portal_code:C.portalCode,requested_portal_code:C.portalCode,requested_page:page()})}
-async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}return invoke(apiName(),{action:'workspace',page:p})}
+async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}return invoke(apiName(),{action:'workspace',page:p})}
 
 function displayName(c){
   return String(c?.organization?.legal_name||c?.employer?.legal_name||c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.plan?.name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
@@ -152,7 +152,7 @@ function quickCards(){
   return `<div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Quick Actions</h2><p>Open another area of your NON-DOT Workforce portal.</p></div></div><div class="cards" style="padding:14px">${rows.map(x=>`<a class="card" href="${esc(x.href)}"><strong>${esc(x.label)}</strong><span>${esc(cardCopy(norm(x.id)))}</span></a>`).join('')}</div></div>`;
 }
 function cardCopy(id){const m={employers:'Manage customer Employer accounts.',company:'Review company and contact information.',people:'Manage Employees and NON-DOT Drivers.',programs:'Create and maintain NON-DOT testing programs.',pools:'Manage NON-DOT random testing pools.',selections:'Review NON-DOT random selection events.',testing:'Create and track NON-DOT testing orders.',results:'Review testing results available to this account.',compliance:'Track company-policy compliance cases and tasks.',documents:'Review Workforce program documents.',consents:'Manage consents and acknowledgments.',reports:'Review available Workforce reporting.',notifications:'Review portal notifications.',billing:'Review billing and invoices.',team:'Review users and roles.',locations:'Manage company locations.',branding:'Review portal branding.',integrations:'Review enabled integrations.','audit-history':'Review account activity history.',profile:'Review your Workforce profile.','my-testing':'Review testing assigned to you.','my-results':'Review results available to you.',training:'Review your training records.',credentials:'Review your credentials.'};return m[id]||'Open this portal area.'}
-function rowButtons(r,type){if(C.kind==='self')return'';if(type==='employee'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/person.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;return `<button class="btn ghost" style="padding:6px 9px" data-edit="${type}" data-id="${esc(r.id)}" type="button">Edit</button><button class="btn ghost" style="padding:6px 9px" data-delete="${type}" data-id="${esc(r.id)}" type="button">Delete</button>`}
+function rowButtons(r,type){if(C.kind==='self')return'';if(type==='employee'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/person.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;if(type==='contact'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/contact.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;return `<button class="btn ghost" style="padding:6px 9px" data-edit="${type}" data-id="${esc(r.id)}" type="button">Edit</button><button class="btn ghost" style="padding:6px 9px" data-delete="${type}" data-id="${esc(r.id)}" type="button">Delete</button>`}
 
 const employerFields=[
   {name:'legal_name',label:'Legal company name',required:true},{name:'dba_name',label:'DBA name'},
@@ -246,6 +246,7 @@ function renderMgmt(p){
     return `${metrics(top)}${quickCards()}`;
   }
   if(p==='employers')return table('Client Employers',data.employers||[],COLS.employers,r=>rowButtons(r,'employer'));
+  if(p==='contact')return renderContact();
   if(p==='people')return `${metrics([['People',(data.employees||[]).length,'Employees + NON-DOT Drivers'],['Employees',(data.employees||[]).filter(x=>x.workforce_worker_type!=='driver').length,'Employee records'],['NON-DOT Drivers',(data.employees||[]).filter(x=>x.workforce_worker_type==='driver').length,'Driver records'],['Active',(data.employees||[]).filter(x=>x.employment_status==='active').length,'Currently active']])}<div style="height:14px"></div>${table('People',data.employees||[],COLS.employees,r=>rowButtons(r,'employee'))}`;if(p==='person')return renderPerson();
   if(p==='programs')return table('NON-DOT Programs',data.programs||[],COLS.programs,r=>rowButtons(r,'program'));
   if(p==='pools')return table('NON-DOT Random Testing Pools',data.pools||[],COLS.pools,r=>rowButtons(r,'pool'));
@@ -269,6 +270,28 @@ function renderMgmt(p){
   if(p==='company')return `<div class="panel"><div class="panel-head"><div><h2>${esc(data.employer?.legal_name||ctx?.membership?.organization_name||'Company')}</h2><p>NON-DOT Workforce company profile.</p></div></div><div style="padding:16px">${metrics([['Status',pretty(data.employer?.status||'active')],['State',data.employer?.state||'—'],['Phone',data.employer?.phone||'—'],['Plan',ctx?.subscription?.plan_name||'—']])}</div></div><div style="height:14px"></div>${table('Company Contacts',data.contacts||[],COLS.contacts,r=>rowButtons(r,'contact'))}`;
   return '<div class="panel"><div class="empty">No records available.</div></div>';
 }
+
+function renderContact(){
+  const c=data?.contact||{},isEdit=!!c.id,v={contact_type:'staff',status:'active',...c};
+  return `<form id="contactForm" class="person-form contact-form">
+    <div class="person-page-head"><div><span>Company Contact Management</span><h2>${isEdit?`Manage ${esc(c.full_name||[c.first_name,c.last_name].filter(Boolean).join(' ')||'Contact')}`:'Add Company Contact'}</h2><p>Create or maintain a company contact record for Staff, HR, Safety, Billing, Primary, or other account contacts.</p></div><span class="badge ${String(v.status)==='active'?'good':'bad'}">${esc(pretty(v.status||'active'))}</span></div>
+    <div id="contactPageNotice"></div>
+    <div class="person-form-grid">
+      <section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Contact Role</h3><p>Define how this person supports the account.</p></div></div><div class="person-fields">
+        ${personSelect('contact_type','Contact type',v.contact_type||'staff',[['primary','Primary'],['staff','Staff'],['hr','HR'],['safety','Safety'],['billing','Billing'],['other','Other']],true)}${personInput('title','Title / Position',v)}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Contact Information</h3><p>Name and direct contact details.</p></div></div><div class="person-fields">
+        ${personInput('first_name','First name',v,true)}${personInput('last_name','Last name',v,true)}${personInput('email','Email',v,false,'email')}${personInput('phone','Phone',v,false,'tel')}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>03</span><div><h3>Account Status</h3><p>Control whether this contact remains active on the company account.</p></div></div><div class="person-fields">
+        ${personSelect('status','Status',v.status||'active',[['active','Active'],['inactive','Inactive']],true)}
+      </div></section>
+    </div>
+    <div class="person-savebar"><a class="btn ghost" href="/company.html">Cancel</a>${isEdit?'<button class="btn ghost danger" type="button" id="deactivateContact">Deactivate Contact</button>':''}<button class="btn primary" type="submit">${isEdit?'Save Changes':'Add Contact'}</button></div>
+  </form>`;
+}
+function contactPageNotice(message,type='good'){const el=$('#contactPageNotice');if(!el)return;el.innerHTML=`<div class="notice ${type==='bad'?'error':''}" style="margin-bottom:12px">${esc(message)}</div>`}
+function bindContact(){const f=$('#contactForm');if(!f)return;f.onsubmit=async ev=>{ev.preventDefault();const vals=Object.fromEntries(new FormData(f).entries());if(data?.contact?.id)vals.id=data.contact.id;try{const out=await invoke('nondot-employer-company',{action:'save_contact',contact:vals});contactPageNotice(data?.contact?.id?'Contact updated.':'Contact added.');setTimeout(()=>location.href=`/contact.html?id=${encodeURIComponent(out.contact.id)}`,250)}catch(err){contactPageNotice(err.message||String(err),'bad')}};const d=$('#deactivateContact');if(d)d.onclick=async()=>{try{await invoke('nondot-employer-company',{action:'delete_contact',id:data.contact.id});contactPageNotice('Contact deactivated.');setTimeout(()=>location.href='/company.html',250)}catch(err){contactPageNotice(err.message||String(err),'bad')}}}
 
 function renderPerson(){
   const e=data?.employee||{},p=data?.profile||{},v={country:'US',...e,...p};
@@ -305,7 +328,7 @@ function brandedMessage(title,message){const b=modalShell(title,`<p class="modal
 
 function managementActions(p){
   if(C.kind==='self')return;
-  if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');
+  if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');if(p==='contact')addAction('Back to Company',()=>location.href='/company.html');
   if(p==='programs')addAction('Add NON-DOT Program',()=>formModal('Add NON-DOT Program',programFields(data.employers||[]),{},async v=>invoke(apiName(),{action:'save_program',program:v})));
   if(p==='pools')addAction('Add NON-DOT Pool',()=>formModal('Add NON-DOT Random Testing Pool',poolFields(data.employers||[],data.programs||[]),{},async v=>invoke(apiName(),{action:'save_pool',pool:v})));
   if(p==='testing')addAction('Create Testing Order',()=>formModal('Create NON-DOT Testing Order',[
@@ -315,7 +338,7 @@ function managementActions(p){
     {name:'reason',label:'Reason',type:'select',options:['pre_employment','random','reasonable_suspicion','post_accident','return_to_work','follow_up','other'].map(x=>({value:x,label:pretty(x)}))},
     {name:'test_type',label:'Test type',type:'select',options:[{value:'drug',label:'Drug'},{value:'alcohol',label:'Alcohol'},{value:'drug_and_alcohol',label:'Drug + Alcohol'}]}
   ],{},async v=>invoke(apiName(),{action:'create_testing',testing:v})));
-  if(C.kind==='employer'&&p==='company')addAction('Add Contact',()=>formModal('Add Company Contact',contactFields,{status:'active',contact_type:'staff'},async v=>invoke('nondot-employer-company',{action:'save_contact',contact:v})));
+  if(C.kind==='employer'&&p==='company')addAction('Add Contact',()=>location.href='/contact.html');
   if(C.kind==='employer'&&p==='locations')addAction('Add Location',()=>formModal('Add Location',locationFields,{},async v=>invoke(apiName(),{action:'save_location',location:v})));
   }
 function subtitleFor(p){
@@ -323,6 +346,7 @@ function subtitleFor(p){
     dashboard:C.kind==='self'?'Your secure NON-DOT Workforce self-service dashboard.':C.kind==='ctpa'?'Manage customer Employers and their NON-DOT workforce programs, pools, testing, results, and compliance.':'Manage your company’s NON-DOT workforce program, employees / drivers, testing, and compliance.',
     employers:'Manage customer Employer accounts under your NON-DOT Workforce C/TPA program.',
     company:'Review your company profile and Workforce contacts.',
+    contact:'Create or manage a company contact record.',
     people:'Your employee and NON-DOT driver record center. Use View / Manage to open a complete person account.',person:'Create or manage the complete employee or NON-DOT driver account.',
     programs:'Create and manage company-policy NON-DOT testing programs. These programs are not DOT-regulated.',
     pools:'Manage NON-DOT random testing pools, rates, and selection schedules.',
@@ -355,7 +379,7 @@ async function refresh(){
     const p=norm(page());
     if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
     if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
-    managementActions(p);bindRows();if(p==='person')bindPerson();
+    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();
     $$('[data-cancel-testing]').forEach(b=>b.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? Completed testing history is not removed.');if(!ok)return;try{await invoke(apiName(),{action:'cancel_testing',id:b.dataset.cancelTesting});notice('Testing order cancelled.','good');await refresh()}catch(err){notice(err.message||String(err))}});
     $$('[data-consent]').forEach(b=>b.onclick=()=>formModal('Complete Consent / Acknowledgment',[{name:'acknowledged_name',label:'Type your full name',required:true},{name:'accepted',label:'I acknowledge and accept',type:'select',options:[{value:'true',label:'Yes'}]}],{},async v=>invoke(apiName(),{action:'complete_consent_assignment',assignment_id:b.dataset.consent,acknowledged_name:v.acknowledged_name,accepted:v.accepted==='true'})));
   }catch(err){notice(err.message||String(err));if($('#content'))$('#content').innerHTML='<div class="panel"><div class="empty">Unable to load this page.</div></div>'}
