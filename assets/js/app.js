@@ -8,7 +8,7 @@ if(localStorage.getItem('s4u_workforce_storage_schema')!==STORAGE_SCHEMA){
   });
   localStorage.setItem('s4u_workforce_storage_schema',STORAGE_SCHEMA);
 }
-const sb=window.__S4USupabase||(window.__S4USupabase=window.supabase.createClient(C.workforceUrl,C.workforceKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}));
+const auth=window.S4UAuth;
 const FONT_KEY='s4u_employer_nondot_font_size_v2';
 const FONT_DEFAULT=13,FONT_MIN=12,FONT_MAX=18;
 function readFontSize(){const n=Number(localStorage.getItem(FONT_KEY));return Number.isFinite(n)?Math.min(FONT_MAX,Math.max(FONT_MIN,n)):FONT_DEFAULT}
@@ -25,14 +25,14 @@ const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboa
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
-const CTX_CACHE='s4u_employer_ctx_v1',BRAND_CACHE='s4u_employer_brand_v1',DATA_CACHE='s4u_employer_page_cache_v1:';
+const CTX_CACHE='s4u_employer_ctx_v1',BRAND_CACHE='s4u_employer_brand_v1',DATA_CACHE='s4u_employer_page_cache_v2:';
 const jsonGet=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null')}catch{return null}},jsonSet=(store,key,val)=>{try{store.setItem(key,JSON.stringify(val))}catch{}};
 const cacheKeyFor=(pathname,search='')=>DATA_CACHE+pathname+search;
 const pageCacheKey=()=>cacheKeyFor(location.pathname,location.search);
-const cachedPage=()=>{const x=jsonGet(sessionStorage,pageCacheKey());return x&&Date.now()-Number(x.t||0)<300000?x.data:null};
-const cachePage=v=>jsonSet(sessionStorage,pageCacheKey(),{t:Date.now(),data:v});
-const cachePageFor=(pathname,v,search='')=>jsonSet(sessionStorage,cacheKeyFor(pathname,search),{t:Date.now(),data:v});
-const hasFreshCache=(pathname,search='')=>{const x=jsonGet(sessionStorage,cacheKeyFor(pathname,search));return !!(x&&Date.now()-Number(x.t||0)<300000)};
+const cachedPage=()=>{const x=jsonGet(sessionStorage,pageCacheKey())||jsonGet(localStorage,pageCacheKey());return x&&Date.now()-Number(x.t||0)<86400000?x.data:null};
+const cachePage=v=>{const x={t:Date.now(),data:v};jsonSet(sessionStorage,pageCacheKey(),x);jsonSet(localStorage,pageCacheKey(),x)};
+const cachePageFor=(pathname,v,search='')=>{const x={t:Date.now(),data:v};jsonSet(sessionStorage,cacheKeyFor(pathname,search),x);jsonSet(localStorage,cacheKeyFor(pathname,search),x)};
+const hasFreshCache=(pathname,search='')=>{const x=jsonGet(sessionStorage,cacheKeyFor(pathname,search))||jsonGet(localStorage,cacheKeyFor(pathname,search));return !!(x&&Date.now()-Number(x.t||0)<600000)};
 const cachedCtx=()=>jsonGet(localStorage,CTX_CACHE),cachedBrand=()=>jsonGet(localStorage,BRAND_CACHE);
 const cfgPage=id=>norm(id)==='invoice'?{id:'invoice',label:'Invoice',icon:'$'}:norm(id)==='notification'?{id:'notification',label:'Notification',icon:'●'}:norm(id)==='internal-message'?{id:'internal-message',label:'Internal Message',icon:'✉'}:norm(id)==='support-ticket'?{id:'support-ticket',label:'Support Ticket',icon:'?'}:norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:norm(id)==='pool'?{id:'pool',label:'Pool Management',icon:'⊙'}:norm(id)==='selection'?{id:'selection',label:'Random Selection Management',icon:'✦'}:norm(id)==='testing-order'?{id:'testing-order',label:'Testing Order',icon:'◆'}:norm(id)==='document-upload'?{id:'document-upload',label:'Upload Document',icon:'▣'}:norm(id)==='schedule-entry'?{id:'schedule-entry',label:'Schedule Management',icon:'▦'}:norm(id)==='time-off'?{id:'time-off',label:'Time Off Management',icon:'◷'}:norm(id)==='task'?{id:'task',label:'Task Management',icon:'✓'}:norm(id)==='location'?{id:'location',label:'Location Management',icon:'⌖'}:norm(id)==='integration'?{id:'integration',label:'Integration Setup',icon:'↔'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
@@ -41,7 +41,7 @@ function brandInfo(){const d=brandState||{},b=d.branding||{},x=d.branding_defaul
 function applyBranding(){const b=brandInfo();if(!b.enabled||!b.applyPortal)return;document.documentElement.style.setProperty('--navy',b.primary);document.documentElement.style.setProperty('--navy2',b.primary);document.documentElement.style.setProperty('--blue',b.primary);document.documentElement.style.setProperty('--orange',b.accent);document.body.dataset.whiteLabel='true';const fav=document.querySelector('link[rel="icon"]');if(fav&&b.favicon)fav.href=b.favicon;}
 async function loadBranding(){if(C.kind!=='employer')return null;try{return await invoke('nondot-employer-branding',{action:'workspace'})}catch(e){return null}}
 
-let _sessionPromise=null;async function session(){if(!_sessionPromise)_sessionPromise=sb.auth.getSession().then(({data:{session},error})=>{if(error)throw error;return session}).catch(e=>{_sessionPromise=null;throw e});return _sessionPromise}
+let _sessionPromise=null;async function session(){if(!_sessionPromise)_sessionPromise=auth.getSession().catch(e=>{_sessionPromise=null;throw e});return _sessionPromise}
 async function invoke(name,body={}){
   const s=await session();
   if(!s)throw new Error('Your session has expired. Please sign in again.');
@@ -1040,16 +1040,19 @@ async function boot(){
     // On repeat navigation, only fetch the current page payload. Context and branding are
     // already cached and do not need to block every page transition.
     if(haveCachedCtx){
-      const freshData=await load();
-      data=freshData;cachePage(data);renderCurrent();clearTimeout(timer);stopSpinner();prefetchPortal();
-      // Refresh context/branding later without delaying the page.
+      clearTimeout(timer);stopSpinner();prefetchPortal();
+      // Never block navigation on Supabase when we already have a usable shell/cache.
+      // Fresh data arrives in the background and replaces cached content when ready.
+      Promise.resolve().then(async()=>{
+        try{const freshData=await load();data=freshData;cachePage(data);renderCurrent()}catch(e){if(!cp)notice(e.message||String(e))}
+      });
       setTimeout(async()=>{
         try{
           const [freshCtx,freshBrand]=await Promise.all([access(),loadBranding()]);
           if(freshCtx){ctx=freshCtx;jsonSet(localStorage,CTX_CACHE,ctx);window.portalCtx=ctx}
           if(freshBrand){brandState=freshBrand;jsonSet(localStorage,BRAND_CACHE,brandState);applyBranding()}
         }catch{}
-      },1200);
+      },1500);
       return;
     }
 
@@ -1068,5 +1071,6 @@ async function boot(){
     document.body.innerHTML=`<main class="login-page"><section class="login-card"><img class="login-logo" src="/images/workforce-non-dot.png" alt="screenings4u"><h1>Portal unavailable</h1><p>${esc(msg||'This NON-DOT Workforce portal could not be loaded.')}</p><a class="btn primary" href="/login.html">Return to sign in</a></section></main>`;
   }
 }
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js?v=20261007-ultrafast1').catch(()=>{}),{once:true})}
 boot();
 })();
