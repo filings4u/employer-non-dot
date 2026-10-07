@@ -432,3 +432,20 @@ body[data-portal-page="people"] .metrics{margin-top:0}body[data-portal-page="peo
 
 /* Company contact management */
 body[data-portal-page="company"] .metric strong{font-size:1.15rem}body[data-portal-page="company"] .panel-head h2{font-size:.8rem}body[data-portal-page="company"] .panel-head p{font-size:.58rem}body[data-portal-page="company"] td{font-size:.64rem}body[data-portal-page="company"] th{font-size:.52rem}
+
+/* Employer NON-DOT random program management */
+body[data-portal-page="programs"] .metric strong{font-size:1.05rem}
+body[data-portal-page="programs"] .row-actions{min-width:112px}
+.program-enrollment-card{grid-column:1/-1}
+.program-enrollment-fields{display:block}
+.program-enrollment-fields>.person-field:first-child{max-width:420px;margin-bottom:14px}
+.program-worker-list{border:1px solid var(--line);border-radius:10px;max-height:420px;overflow:auto;background:#fff}
+.program-worker-row{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid #edf1f5;cursor:pointer}
+.program-worker-row:last-child{border-bottom:0}
+.program-worker-row:hover{background:#f8fbff}
+.program-worker-row input{width:16px;height:16px;margin:0}
+.program-worker-main{min-width:0}
+.program-worker-main strong{display:block;color:var(--ink);font-size:.64rem;margin-bottom:2px}
+.program-worker-main small{display:block;color:var(--muted);font-size:.54rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.program-worker-list-disabled{opacity:.5;background:#f7f9fb;pointer-events:none}
+@media(max-width:680px){.program-worker-row{grid-template-columns:20px 1fr}.program-worker-row>.badge{grid-column:2;justify-self:start}.program-enrollment-card{grid-column:auto}}

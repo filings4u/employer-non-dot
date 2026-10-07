@@ -24,7 +24,7 @@ const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboa
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
-const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
+const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[];
 
@@ -39,7 +39,7 @@ async function invoke(name,body={}){
   return d;
 }
 async function access(){return invoke(apiName(),{action:'session_context',portal_code:C.portalCode,requested_portal_code:C.portalCode,requested_page:page()})}
-async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}return invoke(apiName(),{action:'workspace',page:p})}
+async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}if(C.kind==='employer'&&p==='programs')return invoke('nondot-employer-programs',{action:'workspace'});if(C.kind==='employer'&&p==='program'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-programs',{action:'detail',id}):invoke('nondot-employer-programs',{action:'new'})}return invoke(apiName(),{action:'workspace',page:p})}
 
 function displayName(c){
   return String(c?.organization?.legal_name||c?.employer?.legal_name||c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.plan?.name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
@@ -53,7 +53,7 @@ function shell(c){
   document.body.dataset.portalPage=current;
   NAV=navRows(c);
   const planLabel=displayName(c);
-  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
+  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people')||(current==='program'&&norm(x.id)==='programs');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
   document.title=`${cfgPage(current).label} | ${planLabel}`;
   document.body.className='loading';
   document.body.innerHTML=`<div class="app">
@@ -122,7 +122,7 @@ const percent=v=>v===null||v===undefined||v===''?'—':`${Number(v)}%`;
 const COLS={
   employers:[['Employer',['legal_name','workforce_display_name']],['Status',['status'],v=>badge(v)],['Primary Contact',['primary_contact_email']],['State',['state']]],
   employees:[['Name',['first_name'],(v,r)=>esc(personName(r))],['Type',['workforce_worker_type'],v=>badge(v==='driver'?'NON-DOT Driver':'Employee')],['Employee #',['employee_number']],['Department',['department']],['Job Title',['job_title']],['Contact',['email'],(v,r)=>`<strong>${esc(r.email||'—')}</strong><br><small>${esc(r.mobile||'—')}</small>`],['Safety Sensitive',['safety_sensitive'],v=>badge(v===true?'yes':v===false?'no':'—')],['Status',['employment_status'],v=>badge(v)]],
-  programs:[['Program',['name']],['Type',['program_type'],v=>badge(v||'NON_DOT')],['Category',['regulatory_category']],['Panel',['testing_panel']],['Method',['testing_method']],['Drug Rate',['drug_random_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_random_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
+  programs:[['Program',['name']],['Workforce',['enrolled_count'],v=>`${esc(v||0)} enrolled`],['Panel',['testing_panel']],['Method',['testing_method']],['Schedule',['testing_frequency'],v=>pretty(v)],['Drug Rate',['drug_random_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_random_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   pools:[['Pool',['name']],['Type',['pool_type']],['Program',['program_id']],['Schedule',['selection_schedule']],['Drug Rate',['drug_testing_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_testing_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
   selections:[['Date',['selection_date','selected_at'],v=>fmt(v)],['Type',['selection_type']],['Population',['population_size']],['Selected',['selected_count','drug_selection_count','drug_selected']],['Status',['status'],v=>badge(v)]],
   testing:[['Order',['order_number']],['Reason',['reason']],['Test',['test_type']],['Program Type',['program_type'],v=>badge(v||'NON_DOT')],['Status',['status'],v=>badge(v)],['Created',['created_at'],v=>fmt(v)]],
@@ -152,7 +152,7 @@ function quickCards(){
   return `<div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Quick Actions</h2><p>Open another area of your NON-DOT Workforce portal.</p></div></div><div class="cards" style="padding:14px">${rows.map(x=>`<a class="card" href="${esc(x.href)}"><strong>${esc(x.label)}</strong><span>${esc(cardCopy(norm(x.id)))}</span></a>`).join('')}</div></div>`;
 }
 function cardCopy(id){const m={employers:'Manage customer Employer accounts.',company:'Review company and contact information.',people:'Manage Employees and NON-DOT Drivers.',programs:'Create and maintain NON-DOT testing programs.',pools:'Manage NON-DOT random testing pools.',selections:'Review NON-DOT random selection events.',testing:'Create and track NON-DOT testing orders.',results:'Review testing results available to this account.',compliance:'Track company-policy compliance cases and tasks.',documents:'Review Workforce program documents.',consents:'Manage consents and acknowledgments.',reports:'Review available Workforce reporting.',notifications:'Review portal notifications.',billing:'Review billing and invoices.',team:'Review users and roles.',locations:'Manage company locations.',branding:'Review portal branding.',integrations:'Review enabled integrations.','audit-history':'Review account activity history.',profile:'Review your Workforce profile.','my-testing':'Review testing assigned to you.','my-results':'Review results available to you.',training:'Review your training records.',credentials:'Review your credentials.'};return m[id]||'Open this portal area.'}
-function rowButtons(r,type){if(C.kind==='self')return'';if(type==='employee'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/person.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;if(type==='contact'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/contact.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;return `<button class="btn ghost" style="padding:6px 9px" data-edit="${type}" data-id="${esc(r.id)}" type="button">Edit</button><button class="btn ghost" style="padding:6px 9px" data-delete="${type}" data-id="${esc(r.id)}" type="button">Delete</button>`}
+function rowButtons(r,type){if(C.kind==='self')return'';if(type==='employee'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/person.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;if(type==='contact'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/contact.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;if(type==='program'&&C.kind==='employer')return `<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/program.html?id=${encodeURIComponent(r.id)}">View / Manage</a>`;return `<button class="btn ghost" style="padding:6px 9px" data-edit="${type}" data-id="${esc(r.id)}" type="button">Edit</button><button class="btn ghost" style="padding:6px 9px" data-delete="${type}" data-id="${esc(r.id)}" type="button">Delete</button>`}
 
 const employerFields=[
   {name:'legal_name',label:'Legal company name',required:true},{name:'dba_name',label:'DBA name'},
@@ -248,7 +248,7 @@ function renderMgmt(p){
   if(p==='employers')return table('Client Employers',data.employers||[],COLS.employers,r=>rowButtons(r,'employer'));
   if(p==='contact')return renderContact();
   if(p==='people')return `${metrics([['People',(data.employees||[]).length,'Employees + NON-DOT Drivers'],['Employees',(data.employees||[]).filter(x=>x.workforce_worker_type!=='driver').length,'Employee records'],['NON-DOT Drivers',(data.employees||[]).filter(x=>x.workforce_worker_type==='driver').length,'Driver records'],['Active',(data.employees||[]).filter(x=>x.employment_status==='active').length,'Currently active']])}<div style="height:14px"></div>${table('People',data.employees||[],COLS.employees,r=>rowButtons(r,'employee'))}`;if(p==='person')return renderPerson();
-  if(p==='programs')return table('NON-DOT Programs',data.programs||[],COLS.programs,r=>rowButtons(r,'program'));
+  if(p==='programs')return `${metrics([['Programs',(data.programs||[]).length,'Random testing programs'],['Active',(data.programs||[]).filter(x=>x.status==='active').length,'Currently active'],['Enrolled',(data.programs||[]).reduce((n,x)=>n+Number(x.enrolled_count||0),0),'Program enrollments'],['Surface','NON-DOT','Company policy']])}<div style="height:14px"></div>${table('Random Testing Programs',data.programs||[],COLS.programs,r=>rowButtons(r,'program'))}`;if(p==='program')return renderProgram();
   if(p==='pools')return table('NON-DOT Random Testing Pools',data.pools||[],COLS.pools,r=>rowButtons(r,'pool'));
   if(p==='selections')return table('NON-DOT Random Selections',data.selections||[],COLS.selections);
   if(p==='testing')return table('NON-DOT Testing Orders',data.testing_orders||[],COLS.testing,r=>['created','assigned','employee_notified','scheduled'].includes(String(r.status))?`<button class="btn ghost" style="padding:6px 9px" data-cancel-testing="${esc(r.id)}" type="button">Cancel</button>`:'');
@@ -270,6 +270,33 @@ function renderMgmt(p){
   if(p==='company')return `<div class="panel"><div class="panel-head"><div><h2>${esc(data.employer?.legal_name||ctx?.membership?.organization_name||'Company')}</h2><p>NON-DOT Workforce company profile.</p></div></div><div style="padding:16px">${metrics([['Status',pretty(data.employer?.status||'active')],['State',data.employer?.state||'—'],['Phone',data.employer?.phone||'—'],['Plan',ctx?.subscription?.plan_name||'—']])}</div></div><div style="height:14px"></div>${table('Company Contacts',data.contacts||[],COLS.contacts,r=>rowButtons(r,'contact'))}`;
   return '<div class="panel"><div class="empty">No records available.</div></div>';
 }
+
+function renderProgram(){
+  const pr=data?.program||{},cfg=pr.agency_configuration||{},selected=new Set(data?.enrolled_employee_ids||[]),workers=data?.employees||[];
+  const v={regulatory_category:'workplace_testing',testing_panel:'5-panel',testing_method:'urine',drug_random_rate:25,alcohol_random_rate:10,testing_frequency:'quarterly',status:'active',effective_date:new Date().toISOString().slice(0,10),random_selection_method:'computer_random',enrollment_mode:'selected_workers',...pr,...cfg};
+  const workerRows=workers.length?workers.map(w=>`<label class="program-worker-row"><input type="checkbox" name="employee_ids" value="${esc(w.id)}" ${selected.has(w.id)?'checked':''}><span class="program-worker-main"><strong>${esc(personName(w))}</strong><small>${esc(w.employee_number||'No employee #')} · ${esc(w.job_title||'No job title')}</small></span><span class="badge ${w.workforce_worker_type==='driver'?'warn':'good'}">${w.workforce_worker_type==='driver'?'NON-DOT Driver':'Employee'}</span></label>`).join(''):'<div class="empty">No People records are available yet. Add employees or NON-DOT drivers first.</div>';
+  return `<form id="programForm" class="person-form program-form">
+    <div class="person-page-head"><div><span>Random Testing Program Management</span><h2>${pr.id?`Manage ${esc(pr.name)}`:'Create Random Testing Program'}</h2><p>Build the employer’s NON-DOT random testing program, define testing rates and schedule, and control which employees or NON-DOT drivers participate.</p></div><span class="badge ${String(v.status)==='active'?'good':'warn'}">${esc(pretty(v.status))}</span></div>
+    <div id="programPageNotice"></div>
+    <div class="person-form-grid">
+      <section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Program Identity</h3><p>Name the company-policy program and set its effective status.</p></div></div><div class="person-fields">
+        ${personInput('name','Program name',v,true)}${personSelect('regulatory_category','Program category',v.regulatory_category,[['workplace_testing','Workplace Testing'],['drug_free_workplace','Drug-Free Workplace'],['safety_program','Safety Program'],['company_policy','Company Policy']],true)}${personInput('effective_date','Effective date',v,true,'date')}${personSelect('status','Program status',v.status,[['draft','Draft'],['active','Active'],['suspended','Suspended'],['inactive','Inactive']],true)}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Random Testing Design</h3><p>Define the panel, specimen method, annual selection rates, and selection schedule.</p></div></div><div class="person-fields">
+        ${personSelect('testing_panel','Drug testing panel',v.testing_panel,[['5-panel','5-Panel'],['10-panel','10-Panel'],['12-panel','12-Panel'],['custom','Custom Panel']],true)}${personSelect('testing_method','Primary testing method',v.testing_method,[['urine','Urine'],['oral_fluid','Oral Fluid'],['hair','Hair'],['breath','Breath Alcohol'],['mixed','Mixed / Multiple Methods']],true)}${programNumber('drug_random_rate','Annual drug random rate (%)',v.drug_random_rate,0,100,0.1)}${programNumber('alcohol_random_rate','Annual alcohol random rate (%)',v.alcohol_random_rate,0,100,0.1)}${personSelect('testing_frequency','Selection schedule',v.testing_frequency,[['monthly','Monthly'],['quarterly','Quarterly'],['semiannual','Semiannual'],['annual','Annual']],true)}${personSelect('random_selection_method','Selection method',v.random_selection_method,[['computer_random','Computer Random'],['third_party_random','Third-Party Random Selection']],true)}
+      </div></section>
+      <section class="person-card program-enrollment-card"><div class="person-card-head"><span>03</span><div><h3>Workforce Enrollment</h3><p>Choose whether all active workers participate or manage selected employees and NON-DOT drivers individually.</p></div></div><div class="person-fields program-enrollment-fields">
+        ${personSelect('enrollment_mode','Enrollment mode',v.enrollment_mode,[['selected_workers','Selected Workers'],['all_active','All Active Workers']],true)}
+        <div class="person-field full"><label>Program participants</label><div class="program-worker-list" id="programWorkerList">${workerRows}</div></div>
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>04</span><div><h3>Program Notes</h3><p>Internal employer notes about this random testing program.</p></div></div><div class="person-fields"><div class="person-field full"><label>Notes</label><textarea name="notes" rows="6">${esc(v.notes||'')}</textarea></div></div></section>
+    </div>
+    <div class="person-savebar"><a class="btn ghost" href="/programs.html">Cancel</a><button class="btn primary" type="submit">${pr.id?'Save Program':'Create Program'}</button></div>
+  </form>`;
+}
+function programNumber(name,label,value,min,max,step){return `<div class="person-field"><label>${esc(label)}</label><input name="${esc(name)}" type="number" min="${min}" max="${max}" step="${step}" value="${esc(value??'')}"></div>`}
+function programPageNotice(message,type='good'){const el=$('#programPageNotice');if(!el)return;el.innerHTML=`<div class="notice ${type==='bad'?'error':''}" style="margin-bottom:12px">${esc(message)}</div>`}
+function bindProgram(){const f=$('#programForm');if(!f)return;const mode=f.elements.enrollment_mode,list=$('#programWorkerList');const sync=()=>{const all=mode.value==='all_active';if(list)list.classList.toggle('program-worker-list-disabled',all);$$('input[name="employee_ids"]',f).forEach(x=>x.disabled=all)};mode.onchange=sync;sync();f.onsubmit=async ev=>{ev.preventDefault();const fd=new FormData(f),vals=Object.fromEntries(fd.entries());vals.id=data?.program?.id||undefined;const ids=mode.value==='all_active'?[]:fd.getAll('employee_ids');try{const out=await invoke('nondot-employer-programs',{action:'save',program:vals,employee_ids:ids});programPageNotice(data?.program?.id?'Random testing program updated.':'Random testing program created.');setTimeout(()=>location.href=`/program.html?id=${encodeURIComponent(out.program.id)}`,300)}catch(err){programPageNotice(err.message||String(err),'bad')}}}
 
 function renderContact(){
   const c=data?.contact||{},isEdit=!!c.id,v={contact_type:'staff',status:'active',...c};
@@ -328,8 +355,7 @@ function brandedMessage(title,message){const b=modalShell(title,`<p class="modal
 
 function managementActions(p){
   if(C.kind==='self')return;
-  if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');if(p==='contact')addAction('Back to Company',()=>location.href='/company.html');
-  if(p==='programs')addAction('Add NON-DOT Program',()=>formModal('Add NON-DOT Program',programFields(data.employers||[]),{},async v=>invoke(apiName(),{action:'save_program',program:v})));
+  if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');if(p==='contact')addAction('Back to Company',()=>location.href='/company.html');if(p==='programs')addAction('Add Random Testing Program',()=>location.href='/program.html');if(p==='program')addAction('Back to Programs',()=>location.href='/programs.html');
   if(p==='pools')addAction('Add NON-DOT Pool',()=>formModal('Add NON-DOT Random Testing Pool',poolFields(data.employers||[],data.programs||[]),{},async v=>invoke(apiName(),{action:'save_pool',pool:v})));
   if(p==='testing')addAction('Create Testing Order',()=>formModal('Create NON-DOT Testing Order',[
     ...(C.kind==='ctpa'?[{name:'employer_id',label:'Employer',type:'select',required:true,options:(data.employers||[]).map(x=>({value:x.id,label:x.legal_name||x.id}))}]:[]),
@@ -348,7 +374,7 @@ function subtitleFor(p){
     company:'Review your company profile and Workforce contacts.',
     contact:'Create or manage a company contact record.',
     people:'Your employee and NON-DOT driver record center. Use View / Manage to open a complete person account.',person:'Create or manage the complete employee or NON-DOT driver account.',
-    programs:'Create and manage company-policy NON-DOT testing programs. These programs are not DOT-regulated.',
+    programs:'Create and manage your company’s NON-DOT random testing programs for employees and NON-DOT drivers.',program:'Create or manage a complete NON-DOT random testing program and its workforce enrollment.',
     pools:'Manage NON-DOT random testing pools, rates, and selection schedules.',
     selections:'Review NON-DOT random selection events.',
     testing:'Create and track NON-DOT testing orders under company policy.',
@@ -379,7 +405,7 @@ async function refresh(){
     const p=norm(page());
     if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
     if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
-    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();
+    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();
     $$('[data-cancel-testing]').forEach(b=>b.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? Completed testing history is not removed.');if(!ok)return;try{await invoke(apiName(),{action:'cancel_testing',id:b.dataset.cancelTesting});notice('Testing order cancelled.','good');await refresh()}catch(err){notice(err.message||String(err))}});
     $$('[data-consent]').forEach(b=>b.onclick=()=>formModal('Complete Consent / Acknowledgment',[{name:'acknowledged_name',label:'Type your full name',required:true},{name:'accepted',label:'I acknowledge and accept',type:'select',options:[{value:'true',label:'Yes'}]}],{},async v=>invoke(apiName(),{action:'complete_consent_assignment',assignment_id:b.dataset.consent,acknowledged_name:v.acknowledged_name,accepted:v.accepted==='true'})));
   }catch(err){notice(err.message||String(err));if($('#content'))$('#content').innerHTML='<div class="panel"><div class="empty">Unable to load this page.</div></div>'}
