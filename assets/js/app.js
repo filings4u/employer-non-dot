@@ -83,7 +83,7 @@ function shell(c){
     </aside>
     <main class="main">
       <header class="top">
-        <div class="top-left"><button class="menu" id="menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="mobileNav"><span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span></button><button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Hide sidebar" title="Hide sidebar">‹</button><span class="crumb">${esc(planLabel)} / ${esc(cfgPage(current).label)}</span></div>
+        <div class="top-left"><button class="menu" id="menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="mobileNav"><span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span></button><button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Hide navigation" title="Hide navigation"><span class="sidebar-toggle-bars" aria-hidden="true"><span></span><span></span><span></span></span></button><span class="crumb">${esc(planLabel)} / ${esc(cfgPage(current).label)}</span></div>
         <div class="top-right"><div class="font-sizer" role="group" aria-label="Page font size"><button type="button" id="fontDown" aria-label="Decrease font size">A−</button><button type="button" class="font-reset" id="fontSizeValue" aria-label="Reset font size">${portalFontSize===FONT_DEFAULT?'Default':portalFontSize}</button><button type="button" id="fontUp" aria-label="Increase font size">A+</button></div><span class="pill">${esc(C.kind==='self'?'Self Service':'Management')}</span><span class="pill">NON-DOT</span><button class="signout" id="logout" type="button">Sign out</button></div>
       </header>
       <section class="mobile-nav" id="mobileNav" aria-hidden="true" aria-label="Portal navigation"><div class="mobile-nav-inner"><div class="mobile-nav-head"><div><span>Portal navigation</span><strong>${esc(planLabel)}</strong></div><span class="mobile-nav-current">${esc(cfgPage(current).label)}</span></div><nav class="mobile-nav-links">${links}</nav><div class="mobile-nav-foot"><span>${esc(C.domain)}</span><small>Select a page to close this menu.</small></div></div></section>
@@ -95,7 +95,7 @@ function shell(c){
   const setSidebarCollapsed=collapsed=>{
     const next=!!collapsed&&window.innerWidth>820;
     appEl?.classList.toggle('sidebar-collapsed',next);
-    if(sideToggle){sideToggle.textContent=next?'›':'‹';sideToggle.setAttribute('aria-label',next?'Show sidebar':'Hide sidebar');sideToggle.title=next?'Show sidebar':'Hide sidebar'}
+    if(sideToggle){sideToggle.classList.toggle('is-collapsed',next);sideToggle.setAttribute('aria-label',next?'Show navigation':'Hide navigation');sideToggle.title=next?'Show navigation':'Hide navigation'}
     try{localStorage.setItem(SIDE_KEY,next?'1':'0')}catch{}
   };
   let savedSide=false;try{savedSide=localStorage.getItem(SIDE_KEY)==='1'}catch{}
