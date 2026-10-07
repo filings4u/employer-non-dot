@@ -352,7 +352,7 @@ function renderMgmt(p){
   if(p==='programs')return `${metrics([['Programs',(data.programs||[]).length,'Random testing programs'],['Active',(data.programs||[]).filter(x=>x.status==='active').length,'Currently active'],['Enrolled',(data.programs||[]).reduce((n,x)=>n+Number(x.enrolled_count||0),0),'Program enrollments'],['Surface','NON-DOT','Company policy']])}<div style="height:14px"></div>${table('Random Testing Programs',data.programs||[],COLS.programs,r=>rowButtons(r,'program'))}`;if(p==='program')return renderProgram();
   if(p==='pools')return table('NON-DOT Random Testing Pools',data.pools||[],[['Pool',['name']],['Members',['member_count']],['Program',['program.name','program_id']],['Schedule',['selection_schedule']],['Drug Rate',['drug_testing_rate'],v=>percent(v)],['Alcohol Rate',['alcohol_testing_rate'],v=>percent(v)],['Effective',['effective_date'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],r=>rowButtons(r,'pool'));if(p==='pool')return renderPool();
   if(p==='selections')return renderSelectionsIndex();if(p==='selection')return renderSelection();
-  if(p==='testing')return table('NON-DOT Testing Orders',data.testing_orders||[],COLS.testing,r=>`<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/testing-order.html?id=${encodeURIComponent(r.id)}">View Order</a>`);if(p==='testing-order')return renderTestingOrder();
+  if(p==='testing')return renderTestingWorkflow();if(p==='testing-order')return renderTestingOrder();
   if(p==='results')return renderResultsIndex();
   if(p==='compliance')return C.kind==='employer'?renderComplianceHealth():`${table('NON-DOT Compliance Cases',data.cases||[],COLS.compliance)}${(data.tasks||[]).length?table('Compliance Tasks',data.tasks||[],[['Task',['title','task_type']],['Due',['due_at'],v=>fmt(v)],['Status',['status'],v=>badge(v)]]):''}`;
   if(p==='documents')return renderDocumentsIndex();if(p==='document-upload')return renderDocumentUpload();if(p==='consents')return C.kind==='employer'?renderConsentLibrary():`${table('Consent & Acknowledgment Forms',data.forms||[],COLS.consents)}${(data.assignments||[]).length?`<div style="height:14px"></div>${table('Assignments',data.assignments||[],COLS.consents)}`:''}`;if(p==='consent-editor')return renderConsentEditor();if(p==='consent-view')return renderConsentView();
@@ -662,6 +662,37 @@ function bindTestingOrder(){
 }
 
 
+
+function testingWorkflowStep(status){
+  const s=String(status||'').toLowerCase();
+  if(['final_result','closed','completed'].includes(s))return 5;
+  if(['mro_review','mro_confirmation'].includes(s))return 4;
+  if(['laboratory','at_lab'].includes(s))return 3;
+  if(['collected','at_collection','processing'].includes(s))return 2;
+  return 1;
+}
+function workflowLabelForStep(n){return ['Ordered','Processing','At Lab','MRO Confirmation','Completed'][Math.max(1,Math.min(5,Number(n)||1))-1]}
+function workflowStageSummary(rows=[]){
+  const counts=[0,0,0,0,0];
+  for(const r of rows){counts[testingWorkflowStep(r.status)]++}
+  return counts;
+}
+function workflowBoard(rows=[]){
+  const labels=['Ordered','Processing','At Lab','MRO Confirmation','Completed'];
+  const groups=labels.map(()=>[]);
+  for(const r of rows){groups[testingWorkflowStep(r.status)-1].push(r)}
+  return `<div class="workflow-board">${labels.map((label,i)=>`<section class="workflow-column"><header><span>${String(i+1).padStart(2,'0')}</span><div><strong>${esc(label)}</strong><small>${groups[i].length} order${groups[i].length===1?'':'s'}</small></div></header><div class="workflow-column-body">${groups[i].length?groups[i].slice(0,8).map(r=>`<a class="workflow-order-card" href="/testing-order.html?id=${encodeURIComponent(r.id)}"><strong>${esc(r.order_number||'Testing Order')}</strong><span>${esc(personName(r.employee||{}))}</span><small>${esc(r.service_name||r.charge?.service_name||r.testing_panel||pretty(r.test_type||''))}</small><em>${esc(pretty(r.status||label))}</em></a>`).join(''):`<div class="workflow-empty">No orders in this stage.</div>`}</div></section>`).join('')}</div>`;
+}
+function renderTestingWorkflow(){
+  const rows=Array.isArray(data?.testing_orders)?data.testing_orders:[];
+  const counts=workflowStageSummary(rows);
+  const active=rows.filter(r=>!['cancelled','closed','final_result','completed'].includes(String(r.status||'').toLowerCase())).length;
+  const cards=metrics([['Total Orders',rows.length,'All NON-DOT testing orders'],['Active',active,'Orders still moving through testing'],['At Lab',counts[3]||0,'Specimens currently at the laboratory'],['Completed',counts[5]||0,'Finished testing orders']]);
+  const board=`<div class="panel workflow-panel"><div class="panel-head"><div><h2>Testing Workflow</h2><p>Follow every order through the live testing process. Select an order at any stage to open its full record.</p></div></div><div class="workflow-board-wrap">${workflowBoard(rows)}</div></div>`;
+  const list=table('All NON-DOT Testing Orders',rows,COLS.testing,r=>`<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/testing-order.html?id=${encodeURIComponent(r.id)}">View Order</a>`);
+  return `${cards}<div style="height:14px"></div>${board}<div style="height:14px"></div>${list}`;
+}
+
 function resultWorkflow(record){
   const labels=['Ordered','Processing','At Lab','MRO Confirmation','Completed'];
   const current=Math.max(1,Math.min(5,Number(record?.workflow_step||1)));
@@ -682,11 +713,13 @@ function renderResultsIndex(){
     ['Person',['employee.first_name'],(_,r)=>esc(personName(r.employee||{}))],
     ['Service',['charge.service_name','testing_panel']],
     ['Result',['result.final_status'],(_,r)=>resultStatus(r)],
-    ['Workflow',['workflow_label'],(_,r)=>`<strong>${esc(r.workflow_label||'Ordered')}</strong>`],
+    ['Workflow',['workflow_label'],(_,r)=>resultWorkflow(r)],
     ['Updated',['result.finalized_at','result.updated_at','updated_at','created_at'],v=>fmt(v)]
   ];
-  const help=`<div class="notice results-help"><strong>Testing workflow</strong><div>Orders move through <b>Ordered</b> → <b>Processing</b> → <b>At Lab</b> → <b>MRO Confirmation</b> → <b>Completed</b>. Status updates and final results appear here as screenings4u testing management processes the order.</div></div>`;
-  return `${help}<div style="height:14px"></div>${table('NON-DOT Testing Results & Status',rows,cols,resultButtons)}`;
+  const stageCounts=[0,0,0,0,0];
+  for(const r of rows){const step=Math.max(1,Math.min(5,Number(r.workflow_step||testingWorkflowStep(r.status))));stageCounts[step-1]++}
+  const pipeline=`<div class="panel workflow-panel results-workflow-panel"><div class="panel-head"><div><h2>Live Results Workflow</h2><p>Each testing order advances through these stages as collection, laboratory, MRO, and final-result activity is completed.</p></div></div><div class="results-stage-strip">${['Ordered','Processing','At Lab','MRO Confirmation','Completed'].map((label,i)=>`<div class="results-stage"><span>${i+1}</span><div><strong>${esc(label)}</strong><small>${stageCounts[i]} order${stageCounts[i]===1?'':'s'}</small></div></div>`).join('')}</div></div>`;
+  return `${pipeline}<div style="height:14px"></div>${table('NON-DOT Testing Results & Status',rows,cols,resultButtons)}`;
 }
 function primitivePayload(payload){
   if(!payload||typeof payload!=='object')return [];
