@@ -18,13 +18,14 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelect
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pretty=v=>String(v??'—').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase());
 const fmt=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(d)};
+const fmtDateTime=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(d)};
 const money=(v,c='USD')=>new Intl.NumberFormat('en-US',{style:'currency',currency:String(c||'USD')}).format(Number(v||0));
 const badge=v=>`<span class="badge ${/active|complete|paid|eligible|final|negative|enabled|yes/i.test(String(v))?'good':/cancel|inactive|terminated|positive|failed|closed|archived|expired/i.test(String(v))?'bad':'warn'}">${esc(pretty(v))}</span>`;
 const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboard';
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
-const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:norm(id)==='pool'?{id:'pool',label:'Pool Management',icon:'⊙'}:norm(id)==='selection'?{id:'selection',label:'Random Selection Management',icon:'✦'}:norm(id)==='testing-order'?{id:'testing-order',label:'Testing Order',icon:'◆'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
+const cfgPage=id=>norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:norm(id)==='pool'?{id:'pool',label:'Pool Management',icon:'⊙'}:norm(id)==='selection'?{id:'selection',label:'Random Selection Management',icon:'✦'}:norm(id)==='testing-order'?{id:'testing-order',label:'Testing Order',icon:'◆'}:norm(id)==='document-upload'?{id:'document-upload',label:'Upload Document',icon:'▣'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[];
 
@@ -39,7 +40,7 @@ async function invoke(name,body={}){
   return d;
 }
 async function access(){return invoke(apiName(),{action:'session_context',portal_code:C.portalCode,requested_portal_code:C.portalCode,requested_page:page()})}
-async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}if(C.kind==='employer'&&p==='programs')return invoke('nondot-employer-programs',{action:'workspace'});if(C.kind==='employer'&&p==='program'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-programs',{action:'detail',id}):invoke('nondot-employer-programs',{action:'new'})}if(C.kind==='employer'&&p==='pools')return invoke('nondot-employer-pools',{action:'workspace'});if(C.kind==='employer'&&p==='pool'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-pools',{action:'detail',id}):invoke('nondot-employer-pools',{action:'new'})}if(C.kind==='employer'&&p==='selections')return invoke('nondot-employer-selections',{action:'workspace'});if(C.kind==='employer'&&p==='selection'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-selections',{action:'detail',id}):invoke('nondot-employer-selections',{action:'new'})}if(C.kind==='employer'&&p==='testing')return invoke('nondot-employer-testing',{action:'workspace'});if(C.kind==='employer'&&p==='testing-order'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-testing',{action:'detail',id}):invoke('nondot-employer-testing',{action:'new'})}if(C.kind==='employer'&&p==='results')return invoke('nondot-employer-results',{action:'workspace'});if(C.kind==='employer'&&p==='compliance')return invoke('nondot-employer-compliance',{action:'workspace'});return invoke(apiName(),{action:'workspace',page:p})}
+async function load(){const p=page();if(p==='billing'&&C.kind!=='self')return invoke('workforce-invoice-portal',{action:'list'});if(C.kind==='employer'&&p==='company')return invoke('nondot-employer-company',{action:'workspace'});if(C.kind==='employer'&&p==='people')return invoke('nondot-employer-people',{action:'workspace'});if(C.kind==='employer'&&p==='person'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-people',{action:'detail',id}):Promise.resolve({ok:true,employee:null,profile:null})}if(C.kind==='employer'&&p==='contact'){const id=new URLSearchParams(location.search).get('id');const d=await invoke('nondot-employer-company',{action:'workspace'});d.contact=id?(d.contacts||[]).find(x=>String(x.id)===String(id))||null:null;return d}if(C.kind==='employer'&&p==='programs')return invoke('nondot-employer-programs',{action:'workspace'});if(C.kind==='employer'&&p==='program'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-programs',{action:'detail',id}):invoke('nondot-employer-programs',{action:'new'})}if(C.kind==='employer'&&p==='pools')return invoke('nondot-employer-pools',{action:'workspace'});if(C.kind==='employer'&&p==='pool'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-pools',{action:'detail',id}):invoke('nondot-employer-pools',{action:'new'})}if(C.kind==='employer'&&p==='selections')return invoke('nondot-employer-selections',{action:'workspace'});if(C.kind==='employer'&&p==='selection'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-selections',{action:'detail',id}):invoke('nondot-employer-selections',{action:'new'})}if(C.kind==='employer'&&p==='testing')return invoke('nondot-employer-testing',{action:'workspace'});if(C.kind==='employer'&&p==='testing-order'){const id=new URLSearchParams(location.search).get('id');return id?invoke('nondot-employer-testing',{action:'detail',id}):invoke('nondot-employer-testing',{action:'new'})}if(C.kind==='employer'&&p==='results')return invoke('nondot-employer-results',{action:'workspace'});if(C.kind==='employer'&&p==='compliance')return invoke('nondot-employer-compliance',{action:'workspace'});if(C.kind==='employer'&&p==='documents')return invoke('nondot-employer-documents',{action:'workspace'});if(C.kind==='employer'&&p==='document-upload')return invoke('nondot-employer-documents',{action:'workspace'});return invoke(apiName(),{action:'workspace',page:p})}
 
 function displayName(c){
   return String(c?.organization?.legal_name||c?.employer?.legal_name||c?.membership?.organization_name||c?.organization_name||c?.workspace?.organization_name||c?.plan?.name||c?.subscription?.plan_name||C.label||'screenings4u Workforce');
@@ -53,7 +54,7 @@ function shell(c){
   document.body.dataset.portalPage=current;
   NAV=navRows(c);
   const planLabel=displayName(c);
-  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people')||(current==='program'&&norm(x.id)==='programs')||(current==='pool'&&norm(x.id)==='pools')||(current==='selection'&&norm(x.id)==='selections')||(current==='testing-order'&&norm(x.id)==='testing');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
+  const links=NAV.map(x=>{const active=current===norm(x.id)||(current==='person'&&norm(x.id)==='people')||(current==='program'&&norm(x.id)==='programs')||(current==='pool'&&norm(x.id)==='pools')||(current==='selection'&&norm(x.id)==='selections')||(current==='testing-order'&&norm(x.id)==='testing')||(current==='document-upload'&&norm(x.id)==='documents');return `<a href="${esc(x.href)}" class="${active?'active':''}"${active?' aria-current="page"':''}><span class="ico">${esc(x.icon||'•')}</span><span>${esc(x.label||pretty(x.id))}</span></a>`}).join('');
   document.title=`${cfgPage(current).label} | ${planLabel}`;
   document.body.className='loading';
   document.body.innerHTML=`<div class="app">
@@ -118,6 +119,7 @@ function addAction(label,fn,kind='primary'){const b=document.createElement('butt
 function read(o,keys){for(const k of keys){let v=o;for(const p of k.split('.'))v=v?.[p];if(v!==undefined&&v!==null&&v!=='')return v}return'—'}
 const personName=r=>[r?.first_name,r?.middle_name,r?.last_name].filter(Boolean).join(' ')||r?.display_name||'—';
 const percent=v=>v===null||v===undefined||v===''?'—':`${Number(v)}%`;
+const formatBytes=v=>{const n=Number(v||0);if(!n)return'—';if(n<1024)return `${n} B`;if(n<1048576)return `${(n/1024).toFixed(1)} KB`;return `${(n/1048576).toFixed(1)} MB`};
 
 const COLS={
   employers:[['Employer',['legal_name','workforce_display_name']],['Status',['status'],v=>badge(v)],['Primary Contact',['primary_contact_email']],['State',['state']]],
@@ -128,7 +130,7 @@ const COLS={
   testing:[['Order',['order_number']],['Person',['employee.first_name'],(_,r)=>esc(personName(r.employee||{}))],['Reason',['reason'],v=>pretty(v)],['Service',['service_name','testing_panel']],['Program',['program.name','program_id']],['Status',['status'],v=>badge(v)],['Created',['created_at'],v=>fmt(v)]],
   results:[['Order',['testing_orders.order_number','order_number']],['Result',['final_status','verified_result','result'],v=>badge(v)],['Date',['result_date','finalized_at','created_at'],v=>fmt(v)],['Status',['notification_status','status'],v=>badge(v)]],
   compliance:[['Case',['case_number','id']],['Event',['event_type','case_type']],['Priority',['priority'],v=>badge(v)],['Opened',['opened_at','created_at'],v=>fmt(v)],['Status',['status'],v=>badge(v)]],
-  documents:[['File',['file_name','title']],['Type',['document_type']],['Uploaded',['uploaded_at','created_at'],v=>fmt(v)],['Expires',['expires_at'],v=>fmt(v)],['Status',['status','access_level'],v=>badge(v)]],
+  documents:[['File',['file_name','title']],['Type',['document_type'],v=>pretty(v)],['Uploaded',['uploaded_at','created_at'],v=>fmtDateTime(v)],['Visibility',['metadata.visibility'],v=>badge(v==='send_to_workforce'?'Sent to Workforce':'Private')],['Size',['size_bytes'],v=>formatBytes(v)]],
   notifications:[['Subject',['subject','event_type']],['Channel',['channel']],['Status',['status'],v=>badge(v)],['Queued',['queued_at','created_at'],v=>fmt(v)]],
   invoices:[['Invoice',['invoice_number']],['Status',['status'],v=>badge(v)],['Total',['total'],v=>money(v)],['Paid',['amount_paid'],v=>money(v)],['Due',['amount_due'],v=>money(v)],['Issued',['issued_at','created_at'],v=>fmt(v)]],
   members:[['User',['profiles.display_name','profiles.first_name','user_id']],['Role',['roles.name','roles.code','role_name']],['Status',['status'],v=>badge(v)],['Primary',['is_primary'],v=>badge(v===true?'yes':v===false?'no':'—')]],
@@ -225,6 +227,8 @@ function bindRows(){
   $$('[data-invoice-pay]').forEach(b=>b.onclick=()=>payInvoice(b.dataset.invoicePay));
   $$('[data-result-view]').forEach(b=>b.onclick=()=>viewResult(b.dataset.resultView));
   $$('[data-result-download]').forEach(b=>b.onclick=()=>downloadResultPdf(b.dataset.resultDownload));
+  $$('[data-document-view]').forEach(b=>b.onclick=()=>viewDocument(b.dataset.documentView));
+  $$('[data-document-delete]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.documentDelete));
 }
 
 function selfNotice(){return `<div class="notice" style="margin-top:14px"><strong>NON-DOT Workforce self-service</strong><div style="margin-top:4px">Your Employer manages these records. You can review your information and complete assigned Consents & Acknowledgments from this portal.</div></div>`}
@@ -286,7 +290,7 @@ function renderMgmt(p){
   if(p==='testing')return table('NON-DOT Testing Orders',data.testing_orders||[],COLS.testing,r=>`<a class="btn primary" style="padding:6px 9px;text-decoration:none" href="/testing-order.html?id=${encodeURIComponent(r.id)}">View Order</a>`);if(p==='testing-order')return renderTestingOrder();
   if(p==='results')return renderResultsIndex();
   if(p==='compliance')return C.kind==='employer'?renderComplianceHealth():`${table('NON-DOT Compliance Cases',data.cases||[],COLS.compliance)}${(data.tasks||[]).length?table('Compliance Tasks',data.tasks||[],[['Task',['title','task_type']],['Due',['due_at'],v=>fmt(v)],['Status',['status'],v=>badge(v)]]):''}`;
-  if(p==='documents')return table('Workforce Documents',data.documents||[],COLS.documents);
+  if(p==='documents')return renderDocumentsIndex();if(p==='document-upload')return renderDocumentUpload();
   if(p==='notifications')return table('Notifications',data.notifications||[],COLS.notifications);
   if(p==='team')return table('Users & Roles',data.members||[],COLS.members);
   if(p==='locations')return table('Locations',data.locations||[],COLS.locations,r=>C.kind==='employer'?rowButtons(r,'location'):'');
@@ -301,6 +305,65 @@ function renderMgmt(p){
   if(p==='branding')return `<div class="panel"><div class="panel-head"><div><h2>Portal Branding</h2><p>Branding used for your Workforce experience.</p></div></div><div style="padding:16px">${metrics([['Portal Name',data.branding?.portal_name||'screenings4u Workforce'],['Primary Color',data.branding?.primary_color||'Default'],['Accent Color',data.branding?.accent_color||'Default'],['Custom Domain',data.branding?.custom_domain||'Not configured']])}</div></div>`;
   if(p==='company')return `<div class="panel"><div class="panel-head"><div><h2>${esc(data.employer?.legal_name||ctx?.membership?.organization_name||'Company')}</h2><p>NON-DOT Workforce company profile.</p></div></div><div style="padding:16px">${metrics([['Status',pretty(data.employer?.status||'active')],['State',data.employer?.state||'—'],['Phone',data.employer?.phone||'—'],['Plan',ctx?.subscription?.plan_name||'—']])}</div></div><div style="height:14px"></div>${table('Company Contacts',data.contacts||[],COLS.contacts,r=>rowButtons(r,'contact'))}`;
   return '<div class="panel"><div class="empty">No records available.</div></div>';
+}
+
+
+function documentActions(r){
+  return `<button class="btn primary" style="padding:6px 9px" data-document-view="${esc(r.id)}" type="button">View</button><button class="btn ghost document-delete-btn" style="padding:6px 9px" data-document-delete="${esc(r.id)}" type="button" title="Permanently deletes this document and file. This cannot be undone.">Delete</button>`;
+}
+function renderDocumentsIndex(){
+  const rows=data?.documents||[];
+  return `<div class="document-help"><div><strong>Your document library</strong><span>Upload any document your company wants to keep with its NON-DOT Workforce account. Private documents stay in this Employer portal. Documents sent to Workforce NON-DOT are also shared with screenings4u Management for review.</span></div></div>
+  <div class="document-delete-warning" role="note"><strong>Permanent delete</strong><span>The Delete button permanently removes the document record and stored file. It cannot be restored after deletion.</span></div>
+  ${table('Workforce Documents',rows,COLS.documents,r=>documentActions(r))}`;
+}
+function renderDocumentUpload(){
+  return `<form id="documentUploadForm" class="person-form document-upload-form">
+    <div class="person-page-head"><div><span>Document Management</span><h2>Upload Document</h2><p>Add a document to your company’s Workforce NON-DOT library and choose whether it stays private or is sent to Workforce NON-DOT for review.</p></div><span class="badge good">Secure Upload</span></div>
+    <div id="documentUploadNotice"></div>
+    <div class="person-form-grid">
+      <section class="person-card"><div class="person-card-head"><span>01</span><div><h3>Document</h3><p>Choose the file and identify what kind of document it is.</p></div></div><div class="person-fields">
+        <div class="person-field full"><label>Choose document <span aria-hidden="true">*</span></label><input type="file" name="file" id="documentFile" required><small class="field-help">Maximum file size: 50 MB.</small></div>
+        ${personSelect('document_type','Document type','general',[['general','General Document'],['policy','Company Policy'],['hr','Human Resources'],['safety','Safety'],['testing','Drug & Alcohol Testing'],['compliance','Compliance'],['medical','Medical / Fitness'],['invoice','Invoice / Billing'],['other','Other']],true)}
+      </div></section>
+      <section class="person-card"><div class="person-card-head"><span>02</span><div><h3>Visibility / Routing</h3><p>Decide whether this document is only for your company or should be sent to Workforce NON-DOT staff.</p></div></div><div class="person-fields">
+        ${personSelect('visibility','Send document to','private',[['private','Keep Private'],['send_to_workforce','Send to Workforce NON-DOT']],true)}
+        <div class="person-field full"><div class="document-route-explain" id="documentRouteExplain"><strong>Keep Private</strong><span>This file stays in your Employer NON-DOT portal and will not appear in the Workforce NON-DOT management portal.</span></div></div>
+      </div></section>
+      <section class="person-card document-review-card"><div class="person-card-head"><span>03</span><div><h3>Before You Upload</h3><p>Review how document sharing works.</p></div></div><div class="document-upload-rules"><div><strong>Private files</strong><span>Visible to your Employer portal only.</span></div><div><strong>Sent for review</strong><span>Added to the Workforce NON-DOT management Documents page and a branded email notification is sent to Workforce staff.</span></div><div><strong>Secure storage</strong><span>Files are stored in a private bucket and opened through temporary signed links.</span></div></div></section>
+    </div>
+    <div class="person-savebar"><a class="btn ghost" href="/documents.html">Cancel</a><button class="btn primary" id="documentUploadSubmit" type="submit">Upload Document</button></div>
+  </form>`;
+}
+function documentUploadNotice(message,type='good'){
+  const box=$('#documentUploadNotice');if(!box)return;box.innerHTML=`<div class="notice ${type==='bad'?'notice-bad':''}">${esc(message)}</div>`;
+}
+function bindDocumentUpload(){
+  const form=$('#documentUploadForm');if(!form)return;
+  const visibility=form.elements.visibility,route=$('#documentRouteExplain');
+  const updateRoute=()=>{const sent=visibility.value==='send_to_workforce';route.innerHTML=sent?'<strong>Send to Workforce NON-DOT</strong><span>This file will also appear in the Workforce NON-DOT management Documents page and staff will receive a branded email that your company uploaded a document for review.</span>':'<strong>Keep Private</strong><span>This file stays in your Employer NON-DOT portal and will not appear in the Workforce NON-DOT management portal.</span>';route.classList.toggle('sent',sent)};
+  visibility.onchange=updateRoute;updateRoute();
+  form.onsubmit=async e=>{
+    e.preventDefault();const file=$('#documentFile')?.files?.[0];if(!file){documentUploadNotice('Choose a document to upload.','bad');return}
+    if(file.size>52428800){documentUploadNotice('Documents must be 50 MB or smaller.','bad');return}
+    const submit=$('#documentUploadSubmit');submit.disabled=true;submit.textContent='Uploading…';
+    try{
+      const prep=await invoke('nondot-employer-documents',{action:'prepare_upload',file_name:file.name,mime_type:file.type||'application/octet-stream',size_bytes:file.size});
+      const up=await sb.storage.from(prep.bucket).uploadToSignedUrl(prep.path,prep.token,file,{contentType:file.type||'application/octet-stream'});
+      if(up.error)throw up.error;
+      const done=await invoke('nondot-employer-documents',{action:'finalize_upload',document_id:prep.document_id,path:prep.path,file_name:file.name,mime_type:file.type||'application/octet-stream',size_bytes:file.size,document_type:form.elements.document_type.value,visibility:form.elements.visibility.value});
+      documentUploadNotice(done.visibility==='send_to_workforce'?'Document uploaded and sent to Workforce NON-DOT for review.':'Document uploaded and kept private.','good');
+      setTimeout(()=>location.href='/documents.html',500);
+    }catch(err){documentUploadNotice(err.message||String(err),'bad');submit.disabled=false;submit.textContent='Upload Document'}
+  };
+}
+async function viewDocument(id){
+  try{const d=await invoke('nondot-employer-documents',{action:'detail',id});if(!d.url)throw new Error('The document could not be opened.');window.open(d.url,'_blank','noopener,noreferrer')}catch(err){notice(err.message||String(err))}
+}
+async function deleteDocument(id){
+  const ok=await confirmBox('Permanently Delete Document','This permanently deletes the document record and stored file. This action cannot be undone.');
+  if(!ok)return;
+  try{await invoke('nondot-employer-documents',{action:'delete',id});notice('Document permanently deleted.','good');await refresh()}catch(err){notice(err.message||String(err))}
 }
 
 function renderProgram(){
@@ -551,6 +614,7 @@ function managementActions(p){
   if(C.kind==='self')return;
   if(p==='people')addAction('Add Person',()=>location.href='/person.html');if(p==='person')addAction('Back to People',()=>location.href='/people.html');if(p==='contact')addAction('Back to Company',()=>location.href='/company.html');if(p==='programs')addAction('Add Random Testing Program',()=>location.href='/program.html');if(p==='program')addAction('Back to Programs',()=>location.href='/programs.html');if(p==='pools')addAction('Add NON-DOT Pool',()=>location.href='/pool.html');if(p==='pool')addAction('Back to Pools',()=>location.href='/pools.html');if(p==='selections')addAction('Create Random Selection',()=>location.href='/selection.html');if(p==='selection')addAction('Back to Random Selections',()=>location.href='/selections.html');
   if(p==='testing')addAction('Create Testing Order',()=>location.href='/testing-order.html');if(p==='testing-order')addAction('Back to Testing Orders',()=>location.href='/testing.html');
+  if(C.kind==='employer'&&p==='documents')addAction('Upload Document',()=>location.href='/document-upload.html');if(C.kind==='employer'&&p==='document-upload')addAction('Back to Documents',()=>location.href='/documents.html');
   if(C.kind==='employer'&&p==='company')addAction('Add Contact',()=>location.href='/contact.html');
   if(C.kind==='employer'&&p==='locations')addAction('Add Location',()=>formModal('Add Location',locationFields,{},async v=>invoke(apiName(),{action:'save_location',location:v})));
   }
@@ -567,7 +631,7 @@ function subtitleFor(p){
     testing:'Order NON-DOT drug and alcohol tests for employees and drivers. Orders are billed to your company account and sent directly to screenings4u Management.','testing-order':'Create or review a bill-to-account NON-DOT testing order.',
     results:'Track NON-DOT testing from order through lab and MRO review, then view or download completed results.',
     compliance:'Monitor company health, testing outcomes, random-program readiness, and compliance follow-up.',
-    documents:'Review documents associated with the NON-DOT Workforce program.',
+    documents:'Upload, view, and securely manage documents for your NON-DOT Workforce account.','document-upload':'Upload a document and choose whether to keep it private or send it to Workforce NON-DOT for review.',
     consents:'Review and complete company-policy consents and acknowledgments.',
     reports:'Review reporting available for the NON-DOT Workforce program.',
     notifications:'Review Workforce notifications and delivery activity.',
@@ -592,7 +656,7 @@ async function refresh(){
     const p=norm(page());
     if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
     if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
-    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();if(p==='pool')bindPool();if(p==='selection')bindSelection();if(p==='testing-order')bindTestingOrder();
+    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();if(p==='pool')bindPool();if(p==='selection')bindSelection();if(p==='testing-order')bindTestingOrder();if(p==='document-upload')bindDocumentUpload();
     $$('[data-cancel-testing]').forEach(b=>b.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? Completed testing history is not removed.');if(!ok)return;try{await invoke(apiName(),{action:'cancel_testing',id:b.dataset.cancelTesting});notice('Testing order cancelled.','good');await refresh()}catch(err){notice(err.message||String(err))}});
     $$('[data-consent]').forEach(b=>b.onclick=()=>formModal('Complete Consent / Acknowledgment',[{name:'acknowledged_name',label:'Type your full name',required:true},{name:'accepted',label:'I acknowledge and accept',type:'select',options:[{value:'true',label:'Yes'}]}],{},async v=>invoke(apiName(),{action:'complete_consent_assignment',assignment_id:b.dataset.consent,acknowledged_name:v.acknowledged_name,accepted:v.accepted==='true'})));
   }catch(err){notice(err.message||String(err));if($('#content'))$('#content').innerHTML='<div class="panel"><div class="empty">Unable to load this page.</div></div>'}

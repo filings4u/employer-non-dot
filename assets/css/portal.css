@@ -460,3 +460,24 @@ body[data-portal-page="programs"] .row-actions{min-width:112px}
 
 /* Employer NON-DOT compliance health dashboard */
 .compliance-health-head{display:grid;grid-template-columns:190px minmax(0,1fr);gap:14px;margin-bottom:14px}.health-score{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;text-align:center}.health-score small{display:block;color:var(--muted);font-weight:800;font-size:.59rem}.health-score strong{display:block;font-size:2.4rem;line-height:1;color:var(--navy);margin:10px 0 7px}.health-score span{font-size:.68rem;font-weight:900}.health-score.good span{color:#16704a}.health-score.warn span{color:#9a6810}.health-score.bad span{color:#a62d2d}.health-summary{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px}.health-summary h2{margin:0;color:var(--navy);font-size:1.05rem}.health-summary p{margin:7px 0 12px;color:var(--muted);font-size:.65rem;line-height:1.55;max-width:850px}.health-links{display:flex;gap:7px;flex-wrap:wrap}.health-links a{display:inline-flex;padding:7px 10px;border:1px solid #cad8e6;border-radius:8px;text-decoration:none;color:var(--navy);font-size:.58rem;font-weight:850;background:#f9fbfd}.compliance-health-metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px}.compliance-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.health-alerts{padding:12px}.health-alert{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e1e8ef;border-radius:10px;text-decoration:none;margin-bottom:8px;background:#fff}.health-alert:last-child{margin-bottom:0}.health-alert strong{display:block;color:var(--navy);font-size:.67rem}.health-alert span{display:block;color:var(--muted);font-size:.57rem;margin-top:4px;line-height:1.45}.health-alert b{color:#ee6c00;font-size:.58rem;white-space:nowrap}.health-clear{padding:18px}.health-clear strong{display:block;color:#16704a;font-size:.69rem}.health-clear span{display:block;color:var(--muted);font-size:.58rem;margin-top:5px;line-height:1.5}.health-readiness{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px}.health-readiness>div{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fbfcfe}.health-readiness small{display:block;color:var(--muted);font-size:.52rem;font-weight:850}.health-readiness strong{display:block;color:var(--navy);font-size:1.18rem;margin-top:5px}.health-readiness span{display:block;color:var(--muted);font-size:.54rem;margin-top:3px}@media(max-width:1000px){.compliance-health-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.compliance-grid{grid-template-columns:1fr}}@media(max-width:700px){.compliance-health-head{grid-template-columns:1fr}.compliance-health-metrics,.health-readiness{grid-template-columns:1fr 1fr}}@media(max-width:460px){.compliance-health-metrics,.health-readiness{grid-template-columns:1fr}}
+
+/* Employer NON-DOT document management */
+.document-help,.document-delete-warning{display:flex;gap:14px;align-items:flex-start;border:1px solid #d7e2ee;border-radius:14px;background:#fff;padding:16px 18px;margin-bottom:14px}
+.document-help strong,.document-delete-warning strong{display:block;color:#123b66;font-size:1rem;margin-bottom:4px}
+.document-help span,.document-delete-warning span{display:block;color:#5d7086;line-height:1.55}
+.document-delete-warning{border-color:#f1c5af;background:#fff8f4}
+.document-delete-warning strong{color:#9d3d10}
+.document-delete-btn{border-color:#e7b89f!important;color:#9d3d10!important}
+.document-upload-form input[type=file]{width:100%;border:1px solid #ced9e6;border-radius:9px;background:#fff;padding:12px;color:#17365f}
+.field-help{display:block;margin-top:6px;color:#6b7e93;font-size:.85em}
+.document-route-explain{border:1px solid #d8e4ef;border-radius:12px;background:#f8fbfe;padding:16px}
+.document-route-explain strong{display:block;color:#123b66;margin-bottom:5px}
+.document-route-explain span{display:block;color:#5f7287;line-height:1.55}
+.document-route-explain.sent{border-color:#f7b98e;background:#fff8f3}
+.document-route-explain.sent strong{color:#b54900}
+.document-review-card{grid-column:1/-1}
+.document-upload-rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 18px 18px}
+.document-upload-rules>div{border:1px solid #dbe5ef;border-radius:12px;background:#f9fbfd;padding:15px}
+.document-upload-rules strong{display:block;color:#123b66;margin-bottom:5px}
+.document-upload-rules span{display:block;color:#607389;line-height:1.5}
+@media(max-width:800px){.document-upload-rules{grid-template-columns:1fr}.document-help,.document-delete-warning{padding:14px}}
