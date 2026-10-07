@@ -1,6 +1,6 @@
 # screenings4u Workforce Employer
 
-Domain: https://employer-workforce.screenings4u.com
+Domain: https://employer-non-dot.screenings4u.com
 
 Portal code: `employer_workforce`
 

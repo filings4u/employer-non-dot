@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const q=(s,r=document)=>r.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=null,ctx=null,logoRemoved=false;const validHex=v=>/^#[0-9a-fA-F]{6}$/.test(String(v||''));
-function cfg(d=state){const x=d?.branding_defaults||{};return{primary:x.primary_color||'#24467f',accent:x.accent_color||'#ff6b00',logo:x.default_logo_url||'/assets/img/logo.png',bucket:x.storage_bucket||'workforce-branding',max:Number(x.max_logo_bytes||5242880),mimes:x.allowed_logo_mime_types||{'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}}}
+function cfg(d=state){const x=d?.branding_defaults||{};return{primary:x.primary_color||'#24467f',accent:x.accent_color||'#ff6b00',logo:x.default_logo_url||'/images/workforce-non-dot.png',bucket:x.storage_bucket||'workforce-branding',max:Number(x.max_logo_bytes||5242880),mimes:x.allowed_logo_mime_types||{'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}}}
 function brand(d=state){const x=cfg(d),b=d?.branding||{};return{logo_path:b.logo_path||null,portal_name:b.portal_name||'',primary_color:validHex(b.primary_color)?b.primary_color:x.primary,accent_color:validHex(b.accent_color)?b.accent_color:x.accent}}
 function values(){const x=cfg();return{portal_name:q('#brandPortalName')?.value||'',primary_color:q('#brandPrimary')?.value||x.primary,accent_color:q('#brandAccent')?.value||x.accent,remove_logo:logoRemoved}}
 function previewBrand(){const b={...brand(),...values()};if(logoRemoved)b.logo_path=null;return b}

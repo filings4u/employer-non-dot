@@ -20,7 +20,7 @@ const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
 const cfgPage=id=>C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'};
-const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'workforce-employer-operations':'workforce-employer-employee-access';
+const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[];
 
 async function session(){const {data:{session},error}=await sb.auth.getSession();if(error)throw error;return session}
@@ -53,7 +53,7 @@ function shell(c){
   document.body.className='loading';
   document.body.innerHTML=`<div class="app">
     <aside class="side" id="side">
-      <div class="brand"><img class="brand-logo brand-logo-ready" src="/assets/img/logo.png" alt="screenings4u"></div>
+      <div class="brand"><img class="brand-logo brand-logo-ready" src="/images/workforce-non-dot.png" alt="screenings4u"></div>
       <nav class="nav"><div class="nav-title">${esc(planLabel)}</div>${links}</nav>
       <div class="side-foot"><div style="font-size:9px;color:#9fb3c7">Portal</div><div style="font-size:11px;font-weight:800;color:#fff;margin-top:3px">${esc(C.domain)}</div></div>
     </aside>
@@ -329,7 +329,7 @@ async function boot(){
     const msg=String(err?.message||err||'');
     if(/unauthorized|session|jwt|sign in/i.test(msg)){location.replace('/login.html');return}
     document.body.className='';
-    document.body.innerHTML=`<main class="login-page"><section class="login-card"><img class="login-logo" src="/assets/img/logo.png" alt="screenings4u"><h1>Portal unavailable</h1><p>${esc(msg||'This NON-DOT Workforce portal could not be loaded.')}</p><a class="btn primary" href="/login.html">Return to sign in</a></section></main>`;
+    document.body.innerHTML=`<main class="login-page"><section class="login-card"><img class="login-logo" src="/images/workforce-non-dot.png" alt="screenings4u"><h1>Portal unavailable</h1><p>${esc(msg||'This NON-DOT Workforce portal could not be loaded.')}</p><a class="btn primary" href="/login.html">Return to sign in</a></section></main>`;
   }
 }
 boot();

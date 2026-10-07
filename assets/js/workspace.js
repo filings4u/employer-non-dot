@@ -11,7 +11,7 @@
   if(membershipId)body.membership_id=membershipId;
   if(subscriptionId)body.subscription_id=subscriptionId;
 
-  const r=await fetch(`${C.workforceUrl}/functions/v1/${C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'workforce-employer-operations':'workforce-employer-employee-access'}`,{
+  const r=await fetch(`${C.workforceUrl}/functions/v1/${C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access'}`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`,'apikey':C.workforceKey},
     body:JSON.stringify(body)
