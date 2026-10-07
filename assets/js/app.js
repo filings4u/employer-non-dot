@@ -8,7 +8,7 @@ if(localStorage.getItem('s4u_workforce_storage_schema')!==STORAGE_SCHEMA){
   });
   localStorage.setItem('s4u_workforce_storage_schema',STORAGE_SCHEMA);
 }
-const sb=window.supabase.createClient(C.workforceUrl,C.workforceKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const sb=window.__S4USupabase||(window.__S4USupabase=window.supabase.createClient(C.workforceUrl,C.workforceKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}));
 const FONT_KEY='s4u_employer_nondot_font_size_v2';
 const FONT_DEFAULT=13,FONT_MIN=12,FONT_MAX=18;
 function readFontSize(){const n=Number(localStorage.getItem(FONT_KEY));return Number.isFinite(n)?Math.min(FONT_MAX,Math.max(FONT_MIN,n)):FONT_DEFAULT}
@@ -25,6 +25,15 @@ const page=()=>location.pathname.split('/').pop()?.replace('.html','')||'dashboa
 const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
 const storageKey=()=>`s4u_${C.portalCode}_membership`, subKey=()=>`s4u_${C.portalCode}_subscription`;
 const stored=()=>localStorage.getItem(storageKey())||'', storedSub=()=>localStorage.getItem(subKey())||'';
+const CTX_CACHE='s4u_employer_ctx_v1',BRAND_CACHE='s4u_employer_brand_v1',DATA_CACHE='s4u_employer_page_cache_v1:';
+const jsonGet=(store,key)=>{try{return JSON.parse(store.getItem(key)||'null')}catch{return null}},jsonSet=(store,key,val)=>{try{store.setItem(key,JSON.stringify(val))}catch{}};
+const cacheKeyFor=(pathname,search='')=>DATA_CACHE+pathname+search;
+const pageCacheKey=()=>cacheKeyFor(location.pathname,location.search);
+const cachedPage=()=>{const x=jsonGet(sessionStorage,pageCacheKey());return x&&Date.now()-Number(x.t||0)<300000?x.data:null};
+const cachePage=v=>jsonSet(sessionStorage,pageCacheKey(),{t:Date.now(),data:v});
+const cachePageFor=(pathname,v,search='')=>jsonSet(sessionStorage,cacheKeyFor(pathname,search),{t:Date.now(),data:v});
+const hasFreshCache=(pathname,search='')=>{const x=jsonGet(sessionStorage,cacheKeyFor(pathname,search));return !!(x&&Date.now()-Number(x.t||0)<300000)};
+const cachedCtx=()=>jsonGet(localStorage,CTX_CACHE),cachedBrand=()=>jsonGet(localStorage,BRAND_CACHE);
 const cfgPage=id=>norm(id)==='invoice'?{id:'invoice',label:'Invoice',icon:'$'}:norm(id)==='notification'?{id:'notification',label:'Notification',icon:'●'}:norm(id)==='internal-message'?{id:'internal-message',label:'Internal Message',icon:'✉'}:norm(id)==='support-ticket'?{id:'support-ticket',label:'Support Ticket',icon:'?'}:norm(id)==='person'?{id:'person',label:'Person Management',icon:'◎'}:norm(id)==='contact'?{id:'contact',label:'Contact Management',icon:'■'}:norm(id)==='program'?{id:'program',label:'Program Management',icon:'≡'}:norm(id)==='pool'?{id:'pool',label:'Pool Management',icon:'⊙'}:norm(id)==='selection'?{id:'selection',label:'Random Selection Management',icon:'✦'}:norm(id)==='testing-order'?{id:'testing-order',label:'Testing Order',icon:'◆'}:norm(id)==='document-upload'?{id:'document-upload',label:'Upload Document',icon:'▣'}:norm(id)==='schedule-entry'?{id:'schedule-entry',label:'Schedule Management',icon:'▦'}:norm(id)==='time-off'?{id:'time-off',label:'Time Off Management',icon:'◷'}:norm(id)==='task'?{id:'task',label:'Task Management',icon:'✓'}:norm(id)==='location'?{id:'location',label:'Location Management',icon:'⌖'}:norm(id)==='integration'?{id:'integration',label:'Integration Setup',icon:'↔'}:(C.pages.find(x=>norm(x.id)===norm(id))||{id,label:pretty(id),icon:'•'});
 const apiName=()=>C.kind==='ctpa'?'nondot-ctpa-portal':C.kind==='employer'?'nondot-employer-portal':'workforce-employer-employee-access';
 let ctx=null,data=null,NAV=[],brandState=null;
@@ -32,7 +41,7 @@ function brandInfo(){const d=brandState||{},b=d.branding||{},x=d.branding_defaul
 function applyBranding(){const b=brandInfo();if(!b.enabled||!b.applyPortal)return;document.documentElement.style.setProperty('--navy',b.primary);document.documentElement.style.setProperty('--navy2',b.primary);document.documentElement.style.setProperty('--blue',b.primary);document.documentElement.style.setProperty('--orange',b.accent);document.body.dataset.whiteLabel='true';const fav=document.querySelector('link[rel="icon"]');if(fav&&b.favicon)fav.href=b.favicon;}
 async function loadBranding(){if(C.kind!=='employer')return null;try{return await invoke('nondot-employer-branding',{action:'workspace'})}catch(e){return null}}
 
-async function session(){const {data:{session},error}=await sb.auth.getSession();if(error)throw error;return session}
+let _sessionPromise=null;async function session(){if(!_sessionPromise)_sessionPromise=sb.auth.getSession().then(({data:{session},error})=>{if(error)throw error;return session}).catch(e=>{_sessionPromise=null;throw e});return _sessionPromise}
 async function invoke(name,body={}){
   const s=await session();
   if(!s)throw new Error('Your session has expired. Please sign in again.');
@@ -906,32 +915,123 @@ function subtitleFor(p){
   };
   return common[p]||'Manage NON-DOT Workforce information for this portal.';
 }
-async function refresh(){
+function renderCurrent(){
+  if(!ctx)return;
+  const p=norm(page());
+  if($('#actions'))$('#actions').innerHTML='';
+  if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
+  if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
+  managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();if(p==='pool')bindPool();if(p==='selection')bindSelection();if(p==='testing-order')bindTestingOrder();if(p==='document-upload')bindDocumentUpload();if(p==='consents')bindConsentLibrary();if(p==='consent-editor')bindConsentEditor();if(p==='consent-view')bindConsentView();if(p==='reports')bindEnterpriseReports();if(p==='schedule-entry')bindScheduleEntry();if(p==='time-off')bindTimeOff();if(p==='task')bindTask();if(p==='notifications')bindNotificationsCenter();if(p==='internal-message')bindInternalMessage();if(p==='support-ticket')bindSupportTicket();if(p==='location')bindLocation();if(p==='integration')bindIntegration();if(p==='branding'&&window.EmployerBranding)window.EmployerBranding.bind(data,ctx);if(p==='audit-history')bindAuditHistory();if(p==='billing'||p==='invoice')bindBilling();
+}
+function slowSpinner(){document.body.classList.add('network-slow')}
+function stopSpinner(){document.body.classList.remove('loading','network-slow')}
+async function prefetchPageData(pathname){
+  if(C.kind!=='employer'||hasFreshCache(pathname))return;
+  const id=pathname.split('/').pop()?.replace('.html','')||'';
   try{
-    data=await load();
-    if($('#actions'))$('#actions').innerHTML='';
+    let d=null;
+    if(id==='dashboard')d=await invoke(apiName(),{action:'workspace',page:'dashboard'});
+    else if(id==='company')d=await invoke('nondot-employer-company',{action:'workspace'});
+    else if(id==='people')d=await invoke('nondot-employer-people',{action:'workspace'});
+    else if(id==='programs')d=await invoke('nondot-employer-programs',{action:'workspace'});
+    else if(id==='pools')d=await invoke('nondot-employer-pools',{action:'workspace'});
+    else if(id==='selections')d=await invoke('nondot-employer-selections',{action:'workspace'});
+    else if(id==='testing')d=await invoke('nondot-employer-testing',{action:'workspace'});
+    else if(id==='results')d=await invoke('nondot-employer-results',{action:'workspace'});
+    else if(id==='compliance')d=await invoke('nondot-employer-compliance',{action:'workspace'});
+    else if(id==='documents')d=await invoke('nondot-employer-documents',{action:'workspace'});
+    else if(id==='consents')d=await invoke('nondot-employer-consents',{action:'workspace'});
+    else if(id==='reports')d=await invoke('nondot-employer-enterprise',{action:'reports_workspace'});
+    else if(id==='scheduler')d=await invoke('nondot-employer-enterprise',{action:'scheduler_workspace'});
+    else if(id==='task-manager')d=await invoke('nondot-employer-enterprise',{action:'tasks_workspace'});
+    else if(id==='notifications')d=await invoke('nondot-employer-notifications',{action:'workspace'});
+    else if(id==='support')d=await invoke('nondot-employer-notifications',{action:'support_workspace'});
+    else if(id==='billing')d=await invoke('nondot-employer-billing',{action:'workspace'});
+    else if(id==='locations')d=await invoke('nondot-employer-locations',{action:'workspace'});
+    else if(id==='integrations')d=await invoke('nondot-employer-integrations',{action:'workspace'});
+    else if(id==='branding')d=await invoke('nondot-employer-branding',{action:'workspace'});
+    else if(id==='audit-history')d=await invoke('nondot-employer-audit',{action:'workspace'});
+    if(d)cachePageFor(pathname,d);
+  }catch{}
+}
+function prefetchPortal(){
+  if(C.kind!=='employer')return;
+  let inflight=false,queued=null;
+  const warmPath=async pathname=>{
+    if(inflight||hasFreshCache(pathname)){queued=pathname;return}
+    inflight=true;
+    try{await prefetchPageData(pathname)}finally{
+      inflight=false;
+      if(queued&&queued!==pathname){const next=queued;queued=null;setTimeout(()=>warmPath(next),120)}else queued=null;
+    }
+  };
+  for(const a of $$('.nav a[href^="/"],.mobile-nav-links a[href^="/"]')){
+    const warm=()=>{try{const u=new URL(a.href,location.origin);warmPath(u.pathname)}catch{}};
+    a.addEventListener('mouseenter',warm,{passive:true});
+    a.addEventListener('focus',warm,{passive:true});
+    a.addEventListener('pointerdown',warm,{passive:true});
+  }
+  // Warm the most-used list pages slowly and one-at-a-time. This avoids the previous
+  // burst of 15+ Edge Function calls that made the whole portal feel slow.
+  const common=['/company.html','/people.html','/programs.html','/pools.html','/testing.html','/results.html','/documents.html','/billing.html'];
+  let i=0;
+  const next=()=>{
+    if(i>=common.length)return;
+    const h=common[i++];
+    if(h===location.pathname||hasFreshCache(h)){setTimeout(next,700);return}
+    warmPath(h).finally(()=>setTimeout(next,900));
+  };
+  setTimeout(next,1800);
+}
+async function refresh(){
+  let timer=setTimeout(slowSpinner,400);
+  try{
+    data=await load();cachePage(data);renderCurrent();
     const p=norm(page());
-    if($('#subtitle'))$('#subtitle').textContent=subtitleFor(p);
-    if($('#content'))$('#content').innerHTML=C.kind==='self'?renderSelf(p):renderMgmt(p);
-    managementActions(p);bindRows();if(p==='person')bindPerson();if(p==='contact')bindContact();if(p==='program')bindProgram();if(p==='pool')bindPool();if(p==='selection')bindSelection();if(p==='testing-order')bindTestingOrder();if(p==='document-upload')bindDocumentUpload();if(p==='consents')bindConsentLibrary();if(p==='consent-editor')bindConsentEditor();if(p==='consent-view')bindConsentView();if(p==='reports')bindEnterpriseReports();if(p==='schedule-entry')bindScheduleEntry();if(p==='time-off')bindTimeOff();if(p==='task')bindTask();if(p==='notifications')bindNotificationsCenter();if(p==='internal-message')bindInternalMessage();if(p==='support-ticket')bindSupportTicket();if(p==='location')bindLocation();if(p==='integration')bindIntegration();if(p==='branding'&&window.EmployerBranding)window.EmployerBranding.bind(data,ctx);if(p==='audit-history')bindAuditHistory();if(p==='billing'||p==='invoice')bindBilling();
     $$('[data-cancel-testing]').forEach(b=>b.onclick=async()=>{const ok=await confirmBox('Cancel Testing Order','Cancel this NON-DOT testing order? Completed testing history is not removed.');if(!ok)return;try{await invoke(apiName(),{action:'cancel_testing',id:b.dataset.cancelTesting});notice('Testing order cancelled.','good');await refresh()}catch(err){notice(err.message||String(err))}});
     $$('[data-consent]').forEach(b=>b.onclick=()=>formModal('Complete Consent / Acknowledgment',[{name:'acknowledged_name',label:'Type your full name',required:true},{name:'accepted',label:'I acknowledge and accept',type:'select',options:[{value:'true',label:'Yes'}]}],{},async v=>invoke(apiName(),{action:'complete_consent_assignment',assignment_id:b.dataset.consent,acknowledged_name:v.acknowledged_name,accepted:v.accepted==='true'})));
   }catch(err){notice(err.message||String(err));if($('#content'))$('#content').innerHTML='<div class="panel"><div class="empty">Unable to load this page.</div></div>'}
-  finally{document.body.classList.remove('loading')}
+  finally{clearTimeout(timer);stopSpinner()}
 }
 window.S4UDialogs={message:brandedMessage,confirm:confirmBox};
 async function boot(){
+  let timer=setTimeout(slowSpinner,700);
   try{
-    ctx=await access();
-    brandState=await loadBranding();
+    const cc=cachedCtx(),cb=cachedBrand(),cp=cachedPage();
+    const haveCachedCtx=!!cc;
+    if(haveCachedCtx){
+      ctx=cc;brandState=cb||null;if(brandState)applyBranding();shell(ctx);window.portalCtx=ctx;
+      if(cp){data=cp;renderCurrent();clearTimeout(timer);stopSpinner()}
+    }
+
+    // On repeat navigation, only fetch the current page payload. Context and branding are
+    // already cached and do not need to block every page transition.
+    if(haveCachedCtx){
+      const freshData=await load();
+      data=freshData;cachePage(data);renderCurrent();clearTimeout(timer);stopSpinner();prefetchPortal();
+      // Refresh context/branding later without delaying the page.
+      setTimeout(async()=>{
+        try{
+          const [freshCtx,freshBrand]=await Promise.all([access(),loadBranding()]);
+          if(freshCtx){ctx=freshCtx;jsonSet(localStorage,CTX_CACHE,ctx);window.portalCtx=ctx}
+          if(freshBrand){brandState=freshBrand;jsonSet(localStorage,BRAND_CACHE,brandState);applyBranding()}
+        }catch{}
+      },1200);
+      return;
+    }
+
+    // First authenticated page: fetch only what is needed, in parallel.
+    const [freshCtx,freshBrand,freshData]=await Promise.all([access(),loadBranding(),load()]);
+    ctx=freshCtx;brandState=freshBrand;data=freshData;
     if(ctx.requires_workspace_selection){location.replace('/workspace.html');return}
     if(ctx.membership?.id)localStorage.setItem(storageKey(),ctx.membership.id);
     if(ctx.subscription?.id)localStorage.setItem(subKey(),ctx.subscription.id);
-    shell(ctx);window.portalCtx=ctx;await refresh();
+    jsonSet(localStorage,CTX_CACHE,ctx);if(brandState)jsonSet(localStorage,BRAND_CACHE,brandState);cachePage(data);
+    applyBranding();shell(ctx);window.portalCtx=ctx;renderCurrent();clearTimeout(timer);stopSpinner();prefetchPortal();
   }catch(err){
     const msg=String(err?.message||err||'');
     if(/unauthorized|session|jwt|sign in/i.test(msg)){location.replace('/login.html');return}
-    document.body.className='';
+    clearTimeout(timer);document.body.className='';
     document.body.innerHTML=`<main class="login-page"><section class="login-card"><img class="login-logo" src="/images/workforce-non-dot.png" alt="screenings4u"><h1>Portal unavailable</h1><p>${esc(msg||'This NON-DOT Workforce portal could not be loaded.')}</p><a class="btn primary" href="/login.html">Return to sign in</a></section></main>`;
   }
 }

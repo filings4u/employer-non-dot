@@ -1,6 +1,6 @@
 (async()=>{
   const C=window.PORTAL_CONFIG;
-  const sb=window.supabase.createClient(C.workforceUrl,C.workforceKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const sb=(window.__S4USupabase||(window.__S4USupabase=window.supabase.createClient(C.workforceUrl,C.workforceKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})));
   const {data:{session}}=await sb.auth.getSession();
   if(!session){location.replace('/login.html');return}
 
