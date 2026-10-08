@@ -557,8 +557,10 @@ body[data-portal-page="results"] td .result-step strong{margin-top:3px;font-size
 /* How-To Help Center layout refinement */
 body[data-portal-page="how-to-guides"] .content > .hero{display:none!important}
 body[data-portal-page="how-to-guides"] .section{margin-top:0}
-body[data-portal-page="how-to-guides"] .howto-section{padding:18px 20px}
-body[data-portal-page="how-to-guides"] .howto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;width:100%}
-body[data-portal-page="how-to-guides"] .howto-card{width:100%;min-height:190px;padding:18px}
+body[data-portal-page="how-to-guides"] .howto-section{padding:20px 22px 22px}
+body[data-portal-page="how-to-guides"] .howto-section>.panel-head{padding:0 0 14px;border-bottom:1px solid var(--line);margin:0 0 16px}
+body[data-portal-page="how-to-guides"] .howto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,380px));gap:16px;width:100%;align-items:stretch;justify-content:start}
+body[data-portal-page="how-to-guides"] .howto-card{width:auto;min-height:190px;padding:18px;margin:0;box-sizing:border-box}
 body[data-portal-page="how-to-guides"] .howto-card .btn{margin-top:auto}
-@media(max-width:620px){body[data-portal-page="how-to-guides"] .howto-section{padding:14px}body[data-portal-page="how-to-guides"] .howto-grid{grid-template-columns:1fr}}
+@media(max-width:900px){body[data-portal-page="how-to-guides"] .howto-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
+@media(max-width:620px){body[data-portal-page="how-to-guides"] .howto-section{padding:16px}body[data-portal-page="how-to-guides"] .howto-section>.panel-head{margin-bottom:14px}body[data-portal-page="how-to-guides"] .howto-grid{grid-template-columns:1fr;gap:12px}body[data-portal-page="how-to-guides"] .howto-card{min-height:0}}
