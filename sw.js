@@ -1,5 +1,5 @@
 const CACHE='s4u-employer-nondot-static-v6-auth401';
-const CORE=['/assets/css/portal.css?v=20261007-navpersist1','/assets/js/config.js','/assets/js/auth-lite.js?v=20261007-welcome1','/assets/js/session-security.js?v=20261007-welcome1','/assets/js/app.js?v=20261007-welcome1','/images/workforce-non-dot.png','/images/workforce-non-dot2.png','/images/fav.png'];
+const CORE=['/assets/css/portal.css?v=20261007-navpersist1','/assets/js/config.js','/assets/js/auth-lite.js?v=20261008-welcome-nav2','/assets/js/session-security.js?v=20261008-welcome-nav2','/assets/js/app.js?v=20261008-welcome-nav2','/images/workforce-non-dot.png','/images/workforce-non-dot2.png','/images/fav.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{}));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{

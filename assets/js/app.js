@@ -88,7 +88,18 @@ function navRows(c){
   const enterprise=raw.includes('workforce employer enterprise')||raw.includes('workforce_employer_enterprise');
   if(enterprise){for(const id of ['scheduler','task-manager','integrations','branding']){if(!allowed.some(x=>norm(x.id)===id)){const local=C.pages.find(x=>norm(x.id)===id);if(local)allowed.push(local)}}}
   else allowed=allowed.filter(x=>!['scheduler','task-manager','integrations','branding'].includes(norm(x.id)));
-  if(C.kind==='employer'){allowed=allowed.filter(x=>norm(x.id)!=='team');for(const id of ['notifications','support']){if(!allowed.some(x=>norm(x.id)===id)){const local=C.pages.find(x=>norm(x.id)===id);if(local)allowed.push(local)}}}
+  if(C.kind==='employer'){
+    allowed=allowed.filter(x=>norm(x.id)!=='team');
+    for(const id of ['welcome','how-to-guides','notifications','support']){
+      if(!allowed.some(x=>norm(x.id)===id)){
+        const local=C.pages.find(x=>norm(x.id)===id);
+        if(local){
+          if(id==='welcome') allowed.unshift(local);
+          else allowed.push(local);
+        }
+      }
+    }
+  }
   return allowed.map(n=>{const id=norm(n.id);const local=cfgPage(id);return {...n,id,label:local.label||n.label||pretty(id),icon:local.icon||n.icon||'•',href:n.href||`/${id}.html`}});
 }
 function shell(c){
@@ -111,7 +122,7 @@ function shell(c){
         <div class="top-right"><div class="font-sizer" role="group" aria-label="Page font size"><button type="button" id="fontDown" aria-label="Decrease font size">A−</button><button type="button" class="font-reset" id="fontSizeValue" aria-label="Reset font size">${portalFontSize===FONT_DEFAULT?'Default':portalFontSize}</button><button type="button" id="fontUp" aria-label="Increase font size">A+</button></div><span class="pill">${esc(C.kind==='self'?'Self Service':'Management')}</span><span class="pill">NON-DOT</span><button class="signout" id="logout" type="button">Sign out</button></div>
       </header>
       <section class="mobile-nav" id="mobileNav" aria-hidden="true" aria-label="Portal navigation"><div class="mobile-nav-inner"><div class="mobile-nav-head"><div><span>Portal navigation</span><strong>${esc(planLabel)}</strong></div><span class="mobile-nav-current">${esc(cfgPage(current).label)}</span></div><nav class="mobile-nav-links">${links}</nav><div class="mobile-nav-foot"><span>${esc(C.domain)}</span><small>Select a page to close this menu.</small></div></div></section>
-      <div class="content"><div id="toast"></div><section class="hero"><span class="hero-kicker">${esc(planLabel)}</span><h1>${esc(cfgPage(current).label)}</h1><p id="subtitle">Loading NON-DOT Workforce workspace.</p><div class="hero-actions" id="actions"></div></section><section class="section" id="content"><div class="panel"><div class="loading-msg">Loading…</div></div></section></div>
+      <div class="content"><div id="toast"></div>${current==='welcome'?'':`<section class="hero"><span class="hero-kicker">${esc(planLabel)}</span><h1>${esc(cfgPage(current).label)}</h1><p id="subtitle">Loading NON-DOT Workforce workspace.</p><div class="hero-actions" id="actions"></div></section>`}<section class="section" id="content"><div class="panel"><div class="loading-msg">Loading…</div></div></section></div>
     </main>
   </div>`;
   const appEl=$('.app'),sideToggle=$('#sidebarToggle');
