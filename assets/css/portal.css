@@ -448,6 +448,12 @@ body[data-portal-page="programs"] .row-actions{min-width:112px}
 .program-worker-main strong{display:block;color:var(--ink);font-size:.64rem;margin-bottom:2px}
 .program-worker-main small{display:block;color:var(--muted);font-size:.54rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .program-worker-list-disabled{opacity:.5;background:#f7f9fb;pointer-events:none}
+.program-worker-list-all-active{background:#f8fbff}
+.program-worker-list-all-active .program-worker-row{cursor:default}
+.program-worker-list-all-active .program-worker-row:hover{background:transparent}
+.program-worker-row-included{background:#f8fbff}
+.program-worker-row-included .program-worker-main strong{color:#0d3f78}
+.program-worker-list-all-active input[type="checkbox"]{opacity:1;accent-color:#0d5cab}
 @media(max-width:680px){.program-worker-row{grid-template-columns:20px 1fr}.program-worker-row>.badge{grid-column:2;justify-self:start}.program-enrollment-card{grid-column:auto}}
 
 .selection-help{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:16px 18px;background:#fff;border:1px solid #d8e3ef;border-radius:14px}.selection-help strong{display:block;color:#123d70;margin-bottom:5px}.selection-help p{margin:0;color:#5b6f84;line-height:1.55;max-width:900px}.selection-tip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#eef5fb;color:#123d70;font-weight:900;cursor:help;position:relative}.selection-tip:hover:after,.selection-tip:focus:after{content:'Create a draft from an existing pool. Review the eligible active population and calculated counts. Run the selection only when ready. Running permanently locks the record.';position:absolute;right:0;top:38px;width:310px;padding:12px 14px;background:#102f55;color:#fff;border-radius:10px;font-size:12px;line-height:1.45;z-index:50;box-shadow:0 12px 30px rgba(16,47,85,.24)}.selection-preview .metrics{margin-bottom:0}@media(max-width:820px){.selection-help{align-items:flex-start}.selection-tip:hover:after,.selection-tip:focus:after{right:-4px;width:min(280px,78vw)}}
