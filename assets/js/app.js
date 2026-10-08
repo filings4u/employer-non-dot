@@ -146,7 +146,7 @@ function shell(c){
   if(fontDown)fontDown.onclick=()=>{portalFontSize=applyFontSize(portalFontSize-1)};
   if(fontUp)fontUp.onclick=()=>{portalFontSize=applyFontSize(portalFontSize+1)};
   if(fontReset)fontReset.onclick=()=>{portalFontSize=applyFontSize(FONT_DEFAULT)};
-  $('#logout').onclick=async()=>{localStorage.removeItem(storageKey());localStorage.removeItem(subKey());await sb.auth.signOut();location.replace('/login.html')};
+  $('#logout').onclick=async()=>{if(window.S4UPortalSecurity?.logout){await window.S4UPortalSecurity.logout('manual');return}localStorage.removeItem(storageKey());localStorage.removeItem(subKey());try{await auth.signOut()}catch{}location.replace('/login.html')};
 }
 
 function notice(message,type='bad'){
